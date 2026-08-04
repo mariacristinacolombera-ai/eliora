@@ -1,9 +1,10 @@
 .logo {
   margin: 0;
 
-  font-size: 3rem;
+  font-size: clamp(2.4rem, 12vw, 3.4rem);
   font-weight: 300;
-  letter-spacing: -0.03em;
+  line-height: 1;
+  letter-spacing: -0.045em;
 
-  color: #2f3a38;
+  color: var(--color-ink);
 }

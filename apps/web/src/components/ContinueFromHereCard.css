@@ -1,0 +1,153 @@
+.continue-card {
+  position: relative;
+  isolation: isolate;
+
+  width: min(100%, 32rem);
+  padding: clamp(1.1rem, 4vw, 1.5rem);
+
+  overflow: hidden;
+
+  border-radius: var(--radius-card);
+  color: var(--color-ink);
+
+  background: rgba(255, 252, 245, 0.68);
+  color: #2f3a38;
+
+  box-shadow:
+    0 1.25rem 3rem rgba(92, 71, 43, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+
+  backdrop-filter: blur(0.5rem);
+}
+.continue-card::before {
+  content: "";
+
+  position: absolute;
+  z-index: -1;
+
+  width: 14rem;
+  height: 14rem;
+
+  top: -7rem;
+  right: -5rem;
+
+  border-radius: 50%;
+
+  background: rgba(255, 228, 164, 0.34);
+  filter: blur(2rem);
+}
+
+.continue-card__eyebrow {
+  margin: 0;
+
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+
+  color: #2f3a38;
+}
+
+.continue-card__type {
+  margin-top: 0.35rem;
+
+  font-size: 0.82rem;
+  font-weight: 500;
+
+  color: #8b7a67;
+}
+
+.continue-card__title {
+  margin-top: 0.8rem;
+
+  font-size: clamp(1.6rem, 7vw, 2rem);
+  font-weight: 400;
+  line-height: 1.1;
+
+  color: #2f3a38;
+}
+
+.continue-card__last-step {
+  margin: 0.75rem 0 0;
+  line-height: 1.5;
+}
+
+.continue-card__next {
+  margin-top: 1.25rem;
+  padding: 1rem 1rem 1rem 1.1rem;
+
+  display: grid;
+  gap: 0.35rem;
+
+  border-left: 0.2rem solid rgba(167, 113, 66, 0.72);
+  border-radius: 0 var(--radius-note) var(--radius-note) 0;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(239, 220, 187, 0.72) 0%,
+      rgba(247, 235, 214, 0.5) 100%
+    );
+}
+
+.continue-card__time {
+  display: block;
+
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+
+  color: #826f5c;
+}
+
+.continue-card__next strong {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.35;
+
+  color: #35413e;
+}
+
+.continue-card__actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+
+  margin-top: 1.25rem;
+}
+
+.continue-card__button {
+  min-height: 3rem;
+  padding: 0 1.1rem;
+
+  border-radius: var(--radius-button);
+
+  font: inherit;
+  font-weight: 600;
+
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+
+  cursor: pointer;
+}
+
+.continue-card__button--primary {
+  border: 0;
+
+ background: var(--color-primary);
+  color: var(--color-primary-contrast);
+
+  box-shadow: 0 0.5rem 1rem rgba(49, 95, 87, 0.18);
+}
+
+.continue-card__button--secondary {
+  border: 1px solid rgba(74, 87, 83, 0.28);
+
+  background: rgba(255, 255, 255, 0.18);
+  color: #35413e;
+}
+
+.continue-card__button:active {
+  transform: translateY(1px);
+}
