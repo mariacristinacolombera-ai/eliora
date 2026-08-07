@@ -1,0 +1,81 @@
+.areas {
+  width: 100%;
+}
+
+.areas__header {
+  margin-bottom: 1.25rem;
+}
+
+.areas__eyebrow {
+  margin: 0;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.areas__title {
+  max-width: 18rem;
+  margin: 0.35rem 0 0;
+
+  font-size: clamp(1.45rem, 6vw, 1.9rem);
+  font-weight: 400;
+  line-height: 1.2;
+
+  color: var(--color-ink);
+}
+
+.areas__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.areas__card {
+  min-height: 8.5rem;
+  padding: 1rem;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  border: 1px solid rgba(117, 101, 78, 0.18);
+  border-radius: 1.15rem;
+
+  background: rgba(255, 252, 245, 0.55);
+  color: var(--color-ink);
+  text-align: left;
+
+  box-shadow: 0 0.75rem 2rem rgba(92, 71, 43, 0.07);
+  backdrop-filter: blur(0.35rem);
+
+  cursor: pointer;
+}
+
+.areas__card-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.areas__card-description {
+  margin-top: 1.25rem;
+
+  font-size: 0.83rem;
+  line-height: 1.4;
+  color: var(--color-muted);
+}
+
+.areas__card:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 22rem) {
+  .areas__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .areas__card {
+    min-height: 7rem;
+  }
+}

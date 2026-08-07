@@ -46,4 +46,6 @@
 
 .home__content {
   width: min(100%, var(--content-width));
+  display: grid;
+  gap: 2.5rem;
 }

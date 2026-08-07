@@ -1,0 +1,96 @@
+.recipe-hero {
+  padding: clamp(1.25rem, 5vw, 1.75rem);
+
+  border: 1px solid rgba(117, 101, 78, 0.18);
+  border-radius: var(--radius-card);
+
+  background: rgba(255, 252, 245, 0.72);
+  color: var(--color-ink);
+
+  box-shadow:
+    0 1.25rem 3rem rgba(92, 71, 43, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+
+  backdrop-filter: blur(0.5rem);
+}
+
+.recipe-hero__eyebrow {
+  margin: 0;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.recipe-hero__title {
+  margin: 0.5rem 0 0;
+
+  font-size: clamp(1.8rem, 8vw, 2.4rem);
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.recipe-hero__date {
+  margin: 0.65rem 0 0;
+
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.recipe-hero__memory {
+  margin: 1.25rem 0 0;
+  padding-left: 1rem;
+
+  border-left: 0.18rem solid rgba(167, 113, 66, 0.65);
+
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--color-ink-soft);
+}
+
+.recipe-hero__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+
+  margin-top: 1.5rem;
+}
+
+.recipe-hero__button {
+  min-height: 3rem;
+  padding: 0 1rem;
+
+  border-radius: var(--radius-button);
+
+  font: inherit;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.recipe-hero__button--primary {
+  border: 0;
+
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.recipe-hero__button--secondary {
+  border: 1px solid rgba(74, 87, 83, 0.28);
+
+  background: transparent;
+  color: var(--color-ink-soft);
+}
+
+.recipe-card__memory {
+  margin: 1rem 0 0;
+  padding-top: 0.9rem;
+
+  border-top: 1px solid rgba(117, 101, 78, 0.12);
+
+  font-size: 0.88rem;
+  line-height: 1.5;
+  font-style: italic;
+
+  color: var(--color-muted);
+}

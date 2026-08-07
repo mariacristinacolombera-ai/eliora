@@ -1,0 +1,24 @@
+.recipe-search{
+    margin-bottom:2rem;
+}
+
+.recipe-search__input{
+
+    width:100%;
+
+    padding:0.95rem 1rem;
+
+    border:none;
+
+    border-radius:999px;
+
+    background:rgba(255,252,245,.75);
+
+    color:var(--color-ink);
+
+    font:inherit;
+
+    box-shadow:
+        inset 0 1px 3px rgba(0,0,0,.05);
+
+}
