@@ -11,10 +11,12 @@ import type { Recipe } from "../domain/Recipe";
 
 type RecipesProps = {
   recipes: Recipe[];
+  onUpdate: (recipe: Recipe) => void;
 };
 
 export default function Recipes({
   recipes,
+  onUpdate,
 }: RecipesProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,6 +32,32 @@ const [showFeedbackLayer, setShowFeedbackLayer] =
 
 const [showAddedMessage, setShowAddedMessage] =
   useState(false);
+
+const [searchQuery, setSearchQuery] = useState("");
+
+const normalizedSearch = searchQuery
+  .trim()
+  .toLowerCase();
+
+const filteredRecipes = recipes.filter((recipe) => {
+  const matchesTitle = recipe.title
+    .toLowerCase()
+    .includes(normalizedSearch);
+
+  const matchesCategory = recipe.category
+    .toLowerCase()
+    .includes(normalizedSearch);
+
+  const matchesTags = recipe.tags.some((tag) =>
+    tag.toLowerCase().includes(normalizedSearch),
+  );
+
+  return (
+    matchesTitle ||
+    matchesCategory ||
+    matchesTags
+  );
+});
 
   useEffect(() => {
   if (!createdRecipeId) {
@@ -79,6 +107,19 @@ const cleanNavigationTimer = setTimeout(() => {
 }, []);
   
 
+const latestPreparedRecipe = recipes
+  .flatMap((recipe) =>
+    recipe.preparations.map((preparation) => ({
+      recipe,
+      preparation,
+    })),
+  )
+  .sort(
+    (a, b) =>
+      new Date(b.preparation.preparedAt).getTime() -
+      new Date(a.preparation.preparedAt).getTime(),
+  )[0];
+
   return (
   <>
     <div
@@ -119,33 +160,72 @@ const cleanNavigationTimer = setTimeout(() => {
         </p>
       </header>
 
-      <RecipeHeroCard
-       title="Pizza in teglia"
-       preparedAt={new Date("2026-08-01T19:30:00+02:00")}
-       memory="Molto leggera, spazzolata dagli ospiti."
-      />
+     {latestPreparedRecipe && (
+  <RecipeHeroCard
+    id={latestPreparedRecipe.recipe.id}
+    title={latestPreparedRecipe.recipe.title}
+    preparedAt={
+      new Date(
+        latestPreparedRecipe.preparation.preparedAt,
+      )
+    }
+    memory={
+      latestPreparedRecipe.preparation.memory
+    }
+    onRemember={(memory) => {
+      const updatedRecipe = {
+        ...latestPreparedRecipe.recipe,
+        preparations:
+          latestPreparedRecipe.recipe.preparations.map(
+            (preparation) =>
+              preparation.id ===
+              latestPreparedRecipe.preparation.id
+                ? {
+                    ...preparation,
+                    memory,
+                  }
+                : preparation,
+          ),
+      };
+
+      onUpdate(updatedRecipe);
+    }}
+  />
+)}
 
       <h2 className="recipes-page__section-title">
         Le tue ricette
       </h2>
 
-      <RecipeSearch />
+      <RecipeSearch
+  value={searchQuery}
+  onChange={setSearchQuery}
+/>
+
 
       <button
         type="button"
-        className="recipes-page__new-button"
+        className="recipes-page__new-button eliora-button--primary"
         onClick={() => navigate("/recipes/new")}
        >
        + Nuova ricetta
       </button>
 
+
+        {filteredRecipes.length === 0 && (
+  <p className="recipes-page__empty-search">
+    Nessuna ricetta trovata.
+  </p>
+)}
+
       <section className="recipes-page__list">
-        {recipes.map((recipe) => (
+        {filteredRecipes.map((recipe) => (
   <RecipeCard
-    key={recipe.id}
-    recipe={recipe}
-    isNew={recipe.id === recentlyCreatedId}
-  />
+  key={recipe.id}
+  recipe={recipe}
+  recipes={recipes}
+  isNew={recipe.id === recentlyCreatedId}
+/>
 ))}
       </section>
     </main>

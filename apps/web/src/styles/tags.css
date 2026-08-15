@@ -1,0 +1,56 @@
+.eliora-tag {
+  display: inline-flex;
+  align-items: center;
+
+  width: fit-content;
+  padding: 0.3rem 0.65rem;
+
+  border-radius: 999px;
+
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+/* Categoria */
+.eliora-tag--category {
+  border: 1px solid rgba(49, 95, 87, 0.45);
+
+  background: rgba(49, 95, 87, 0.10);
+  color: var(--color-primary);
+
+  font-weight: 600;
+
+   transition:
+    background 250ms ease,
+    border-color 250ms ease,
+    transform 250ms ease;
+    text-transform: capitalize;
+}
+
+.eliora-tag--category:hover {
+  background: rgba(49, 95, 87, 0.14);
+}
+
+.eliora-tag--category:active {
+  transform: scale(0.97);
+}
+
+/* Stato della ricetta */
+.eliora-tag--status {
+  border: 1px solid rgba(49, 95, 87, 0.18);
+
+  background: rgba(49, 95, 87, 0.04);
+  color: var(--color-primary);
+
+  font-weight: 500;
+}
+
+/* Caratteristiche della ricetta */
+.eliora-tag--meta {
+  border: 0;
+
+  background: rgba(0, 0, 0, 0.045);
+  color: var(--color-muted);
+
+  font-weight: 400;
+}
