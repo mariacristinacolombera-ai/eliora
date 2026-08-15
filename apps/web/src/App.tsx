@@ -6,22 +6,19 @@ import Recipes from "./pages/Recipes";
 import NewRecipe from "./pages/NewRecipe";
 import RecipeDetail from "./pages/RecipeDetail";
 
-import { currentJourney } from "./data/currentJourney";
-import { recipes as initialRecipes } from "./features/recipes/data/recipes";
-
 import type { Recipe } from "./domain/Recipe";
 
 function getInitialRecipes(): Recipe[] {
   const savedRecipes = localStorage.getItem("eliora-recipes");
 
   if (!savedRecipes) {
-    return initialRecipes;
+    return [];
   }
 
   try {
     return JSON.parse(savedRecipes) as Recipe[];
   } catch {
-    return initialRecipes;
+    return [];
   }
 }
 
@@ -63,9 +60,9 @@ function deleteRecipe(recipeId: string) {
   return (
     <Routes>
       <Route
-        path="/"
-        element={<Home currentJourney={currentJourney} />}
-      />
+  path="/"
+  element={<Home />}
+/>
 
       <Route
   path="/recipes"

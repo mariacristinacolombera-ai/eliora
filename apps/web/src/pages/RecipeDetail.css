@@ -387,25 +387,48 @@
 
 .recipe-detail__notes {
   margin-top: 2rem;
-  padding: 1rem;
+  padding: 0.85rem 0;
 
-  border-radius: 1rem;
+  border: 0;
 
-  background: rgba(255, 252, 245, 0.45);
+  background:
+    repeating-linear-gradient(
+      to right,
+      rgba(117, 101, 78, 0.28) 0,
+      rgba(117, 101, 78, 0.28) 0.45rem,
+      transparent 0.45rem,
+      transparent 0.85rem
+    )
+    top / 100% 1px no-repeat,
+
+    repeating-linear-gradient(
+      to right,
+      rgba(117, 101, 78, 0.28) 0,
+      rgba(117, 101, 78, 0.28) 0.45rem,
+      transparent 0.45rem,
+      transparent 0.85rem
+    )
+    bottom / 100% 1px no-repeat;
 }
 
 .recipe-detail__notes-label {
   margin: 0;
 
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
+  letter-spacing: 0.03em;
+
   color: var(--color-muted);
 }
 
 .recipe-detail__notes-text {
-  margin: 0.55rem 0 0;
+  margin: 0.45rem 0 0;
 
-  line-height: 1.55;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  font-style: italic;
+
+  color: var(--color-ink);
 }
 
 .recipe-detail__mark-tried {

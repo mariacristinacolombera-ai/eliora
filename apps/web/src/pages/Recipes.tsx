@@ -212,11 +212,21 @@ const latestPreparedRecipe = recipes
       </button>
 
 
-        {filteredRecipes.length === 0 && (
+        {recipes.length === 0 ? (
+  <div className="recipes-page__empty-state">
+    <p className="recipes-page__empty-title">
+      Il tuo ricettario è ancora vuoto.
+    </p>
+
+    <p className="recipes-page__empty-text">
+      Comincia dalla prima ricetta che vuoi ritrovare.
+    </p>
+  </div>
+) : filteredRecipes.length === 0 ? (
   <p className="recipes-page__empty-search">
     Nessuna ricetta trovata.
   </p>
-)}
+) : null}
 
       <section className="recipes-page__list">
         {filteredRecipes.map((recipe) => (

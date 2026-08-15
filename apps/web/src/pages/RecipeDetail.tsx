@@ -417,7 +417,12 @@ function confirmTriedWithMemory(recipeToUpdate: Recipe) {
 )}
       </header>
 
-     {(recipe.servings || recipe.timing) && (
+     {(
+  recipe.servings ||
+  recipe.timing?.prepMinutes ||
+  recipe.timing?.cookMinutes ||
+  recipe.timing?.rest
+) && (
   <section className="recipe-detail__facts-section">
     <h2 className="recipe-detail__section-title">
       Dettagli
