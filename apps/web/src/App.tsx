@@ -1,3 +1,10 @@
+import { supabase } from "./lib/supabase";
+import {
+  deleteRecipeFromSupabase,
+  loadRecipesFromSupabase,
+  saveRecipeToSupabase,
+} from "./lib/recipesRepository";
+import Login from "./pages/Login";
 import { useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
@@ -8,38 +15,82 @@ import RecipeDetail from "./pages/RecipeDetail";
 
 import type { Recipe } from "./domain/Recipe";
 
-function getInitialRecipes(): Recipe[] {
-  const savedRecipes = localStorage.getItem("eliora-recipes");
-
-  if (!savedRecipes) {
-    return [];
-  }
-
-  try {
-    return JSON.parse(savedRecipes) as Recipe[];
-  } catch {
-    return [];
-  }
-}
-
 export default function App() {
-  const [recipes, setRecipes] = useState<Recipe[]>(getInitialRecipes);
+
+  const [isAuthenticated, setIsAuthenticated] =
+  useState<boolean | null>(null);
 
   useEffect(() => {
-  localStorage.setItem(
-    "eliora-recipes",
-    JSON.stringify(recipes),
-  );
-}, [recipes]);
+  async function checkSession() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-  function addRecipe(recipe: Recipe) {
+    setIsAuthenticated(Boolean(session));
+  }
+
+  checkSession();
+
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange(
+    (_event, session) => {
+      setIsAuthenticated(Boolean(session));
+    },
+  );
+
+  return () => {
+    subscription.unsubscribe();
+  };
+}, []);
+
+  const [recipes, setRecipes] =
+  useState<Recipe[]>([]);
+
+  useEffect(() => {
+  async function loadCloudRecipes() {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        return;
+      }
+
+      const cloudRecipes =
+        await loadRecipesFromSupabase();
+
+      setRecipes(cloudRecipes);
+    } catch (error) {
+      console.error(
+        "Errore nel caricamento delle ricette da Supabase:",
+        error,
+      );
+    }
+  }
+
+  loadCloudRecipes();
+}, [isAuthenticated]);
+
+
+  async function addRecipe(recipe: Recipe) {
   setRecipes((currentRecipes) => [
     recipe,
     ...currentRecipes,
   ]);
+
+  try {
+    await saveRecipeToSupabase(recipe);
+  } catch (error) {
+    console.error(
+      "Errore nel salvataggio della ricetta su Supabase:",
+      error,
+    );
+  }
 }
 
-function updateRecipe(updatedRecipe: Recipe) {
+async function updateRecipe(updatedRecipe: Recipe) {
   setRecipes((currentRecipes) =>
     currentRecipes.map((recipe) =>
       recipe.id === updatedRecipe.id
@@ -47,18 +98,48 @@ function updateRecipe(updatedRecipe: Recipe) {
         : recipe,
     ),
   );
+
+  try {
+    await saveRecipeToSupabase(updatedRecipe);
+  } catch (error) {
+    console.error(
+      "Errore nell'aggiornamento della ricetta su Supabase:",
+      error,
+    );
+  }
 }
 
-function deleteRecipe(recipeId: string) {
+async function deleteRecipe(recipeId: string) {
   setRecipes((currentRecipes) =>
     currentRecipes.filter(
       (recipe) => recipe.id !== recipeId,
     ),
   );
+
+  try {
+    await deleteRecipeFromSupabase(recipeId);
+  } catch (error) {
+    console.error(
+      "Errore nell'eliminazione della ricetta da Supabase:",
+      error,
+    );
+  }
+}
+
+if (isAuthenticated === null) {
+  return null;
+}
+
+if (!isAuthenticated) {
+  return (
+    <Login
+      onLogin={() => setIsAuthenticated(true)}
+    />
+  );
 }
 
   return (
-    <Routes>
+     <Routes>
       <Route
   path="/"
   element={<Home />}
@@ -116,5 +197,6 @@ function deleteRecipe(recipeId: string) {
   }
 />
     </Routes>
-  );
-}
+    
+);
+  }
