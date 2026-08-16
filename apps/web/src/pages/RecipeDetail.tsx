@@ -14,10 +14,12 @@ type RecipeDetailProps = {
   recipes: Recipe[];
   onUpdate: (recipe: Recipe) => void;
   onDelete: (recipeId: string) => void;
+  isLoading: boolean;
 };
 
 export default function RecipeDetail({
   recipes,
+  isLoading,
   onUpdate,
   onDelete,
 }: RecipeDetailProps) {
@@ -34,6 +36,14 @@ export default function RecipeDetail({
   const recipe = recipes.find(
     (item) => item.id === recipeId,
   );
+
+  if (isLoading) {
+  return (
+    <main className="recipe-detail">
+      <p>Caricamento...</p>
+    </main>
+  );
+}
 
   if (!recipe) {
     return (

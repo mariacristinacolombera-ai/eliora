@@ -47,17 +47,16 @@ export default function App() {
   const [recipes, setRecipes] =
   useState<Recipe[]>([]);
 
+  const [hasLoadedRecipes, setHasLoadedRecipes] =
+  useState(false);
+
   useEffect(() => {
   async function loadCloudRecipes() {
+    if (!isAuthenticated) {
+      return;
+    }
+
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        return;
-      }
-
       const cloudRecipes =
         await loadRecipesFromSupabase();
 
@@ -67,6 +66,8 @@ export default function App() {
         "Errore nel caricamento delle ricette da Supabase:",
         error,
       );
+    } finally {
+      setHasLoadedRecipes(true);
     }
   }
 
@@ -190,10 +191,11 @@ if (!isAuthenticated) {
   path="/recipes/:recipeId"
   element={
     <RecipeDetail
-      recipes={recipes}
-      onUpdate={updateRecipe}
-      onDelete={deleteRecipe}
-    />
+  recipes={recipes}
+  isLoading={!hasLoadedRecipes}
+  onUpdate={updateRecipe}
+  onDelete={deleteRecipe}
+/>
   }
 />
     </Routes>
