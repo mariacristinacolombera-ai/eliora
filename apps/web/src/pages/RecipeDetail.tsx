@@ -1,6 +1,10 @@
 import { useNavigate, useParams } from "react-router-dom";
 import type { Recipe } from "../domain/Recipe";
 import { useState } from "react";
+import {
+  parseQuantity,
+  scaleIngredients,
+} from "../lib/recipeScaling";
 import "./RecipeDetail.css";
 import {
   ArrowLeft,
@@ -32,6 +36,17 @@ export default function RecipeDetail({
   >("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteVariantsToo, setDeleteVariantsToo] = useState(false);
+  const [scaledServings, setScaledServings] =
+  useState<string | null>(null);
+  const [
+  scalingIngredientId,
+  setScalingIngredientId,
+] = useState<string | null>(null);
+
+const [
+  scalingIngredientValue,
+  setScalingIngredientValue,
+] = useState<string>("");
 
   const recipe = recipes.find(
     (item) => item.id === recipeId,
@@ -60,6 +75,59 @@ export default function RecipeDetail({
       </main>
     );
   }
+
+ const baseServings = Number(recipe.servings);
+
+const scaledServingsNumber =
+  scaledServings !== null
+    ? Number(scaledServings)
+    : baseServings;
+
+const scalingIngredient =
+  scalingIngredientId !== null
+    ? recipe.ingredients.find(
+        (ingredient) =>
+          ingredient.id === scalingIngredientId,
+      )
+    : undefined;
+
+const baseIngredientQuantity =
+  scalingIngredient
+    ? parseQuantity(
+        scalingIngredient.quantity,
+      )
+    : null;
+
+const scaledIngredientQuantity =
+  parseQuantity(
+    scalingIngredientValue,
+  );
+
+const scalingFactor =
+  scalingIngredient &&
+  baseIngredientQuantity !== null &&
+  baseIngredientQuantity > 0 &&
+  scaledIngredientQuantity !== null &&
+  scaledIngredientQuantity > 0
+    ? scaledIngredientQuantity /
+      baseIngredientQuantity
+    : scaledServingsNumber !== baseServings &&
+        Number.isFinite(scaledServingsNumber) &&
+        scaledServingsNumber > 0 &&
+        Number.isFinite(baseServings) &&
+        baseServings > 0
+      ? scaledServingsNumber / baseServings
+      : 1;
+
+  const isScalingActive =
+  scalingFactor !== 1;
+
+const displayedIngredients = scaleIngredients(
+  recipe.ingredients,
+  scalingFactor,
+);
+
+  
 
   const lastPreparation =
   recipe.preparations.length > 0
@@ -174,6 +242,12 @@ function confirmTriedWithMemory(recipeToUpdate: Recipe) {
   setShowMemoryPrompt(false);
   setNewMemory("");
   setNewOutcome("");
+}
+
+function resetScaling() {
+  setScaledServings(null);
+  setScalingIngredientId(null);
+  setScalingIngredientValue("");
 }
 
   return (
@@ -511,20 +585,121 @@ function confirmTriedWithMemory(recipeToUpdate: Recipe) {
           <h2 className="recipe-detail__section-title">
             Ingredienti
           </h2>
+              {Number.isFinite(baseServings) && baseServings > 0 && (
+  <div className="recipe-detail__scaling">
+    <label
+      className="recipe-detail__scaling-label"
+      htmlFor="scaled-servings"
+    >
+      Porzioni
+    </label>
 
+    <input
+      id="scaled-servings"
+      className="recipe-detail__scaling-input"
+      type="number"
+      min="0.1"
+      step="any"
+     value={
+  scaledServings !== null
+    ? scaledServings
+    : String(baseServings)
+}
+onFocus={(event) => {
+  if (scaledServings === null) {
+    setScaledServings(String(baseServings));
+  }
+
+  event.currentTarget.select();
+}}
+onChange={(event) => {
+  setScaledServings(event.target.value);
+}}
+onBlur={() => {
+  const value = Number(scaledServings);
+
+  if (
+    scaledServings === "" ||
+    !Number.isFinite(value) ||
+    value <= 0
+  ) {
+    setScaledServings(null);
+  }
+}}
+    />
+
+    {isScalingActive && (
+  <button
+    type="button"
+    className="recipe-detail__scaling-reset"
+    onClick={resetScaling}
+  >
+    Ripristina
+  </button>
+)}
+  </div>
+)}
+{isScalingActive && (
+  <p className="recipe-detail__scaling-note">
+    Quantità adattate temporaneamente.
+  </p>
+)}
           <div className="recipe-detail__ingredients">
-            {recipe.ingredients.map((ingredient) => (
+            {displayedIngredients.map((ingredient) => (
               <div
                 key={ingredient.id}
                 className="recipe-detail__ingredient"
               >
-                <span className="recipe-detail__ingredient-amount">
-                  {ingredient.quantity} {ingredient.unit}
-                </span>
+                <div className="recipe-detail__ingredient-amount">
+  {parseQuantity(ingredient.quantity) !== null ? (
+    <>
+      <input
+        className="recipe-detail__ingredient-scale-input"
+        type="text"
+        inputMode="decimal"
+        value={
+          scalingIngredientId === ingredient.id
+            ? scalingIngredientValue
+            : ingredient.quantity
+        }
+        onFocus={(event) => {
+          setScalingIngredientId(
+            ingredient.id,
+          );
 
-                <span>
-                  {ingredient.name}
-                </span>
+          setScalingIngredientValue(
+            ingredient.quantity,
+          );
+
+          event.currentTarget.select();
+        }}
+        onChange={(event) => {
+          setScalingIngredientId(
+            ingredient.id,
+          );
+
+          setScalingIngredientValue(
+            event.target.value,
+          );
+        }}
+      />
+
+      {ingredient.unit && (
+  <span className="recipe-detail__ingredient-unit">
+    {ingredient.unit}
+  </span>
+)}
+    </>
+  ) : (
+    <>
+      {ingredient.quantity} {ingredient.unit}
+    </>
+  )}
+</div>
+
+                <span className="recipe-detail__ingredient-name">
+  {ingredient.name}
+</span>
               </div>
             ))}
           </div>
