@@ -1,7 +1,18 @@
 @import "./styles/buttons.css";
 @import "./styles/tags.css";
+@import "@fontsource/source-serif-4/400.css";
+@import "@fontsource/source-serif-4/600.css";
+@import "@fontsource/source-serif-4/400-italic.css";
+
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
 
 :root {
+  --font-content: "Source Serif 4", Georgia, serif;
+  --font-ui: "Poppins", system-ui, sans-serif;
+
+
   --color-ink: #2f3a38;
   --color-ink-soft: #35413e;
   --color-muted: #826f5c;
@@ -15,6 +26,7 @@
 
   --color-warm-note: #efdcbb;
   --color-warm-line: #a77142;
+  --color-warm-line-soft: rgba(167, 113, 66, 0.28);
 
   --radius-card: 1.5rem;
   --radius-note: 0.9rem;
@@ -35,6 +47,10 @@
   --color-primary-soft: rgba(49, 95, 87, 0.08);
   --color-primary-border: rgba(49, 95, 87, 0.25);
   --color-meta-fill: rgba(0, 0, 0, 0.045);
+
+  --color-danger: #91504a;
+  --color-danger-soft: rgba(145, 78, 69, 0.08);
+  --color-danger-border: rgba(145, 78, 69, 0.28);
 }
 *,
 *::before,

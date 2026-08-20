@@ -692,8 +692,16 @@ onBlur={() => {
     </>
   ) : (
     <>
-      {ingredient.quantity} {ingredient.unit}
-    </>
+  <span className="recipe-detail__ingredient-static-quantity">
+    {ingredient.quantity}
+  </span>
+
+  {ingredient.unit && (
+    <span className="recipe-detail__ingredient-unit">
+      {ingredient.unit}
+    </span>
+  )}
+</>
   )}
 </div>
 
