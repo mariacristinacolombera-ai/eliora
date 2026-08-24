@@ -4,7 +4,7 @@ import "./Home.css";
 
 export default function Home() {
   return (
-    <main className="home">
+    <main className="home surface-paper">
       <header className="home__header">
         <Logo />
       </header>

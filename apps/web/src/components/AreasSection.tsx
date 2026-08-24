@@ -30,11 +30,13 @@ export default function AreasSection() {
   return (
     <section className="areas" aria-labelledby="areas-title">
       <header className="areas__header">
-        <p className="areas__eyebrow">I tuoi spazi</p>
-
         <h2 id="areas-title" className="areas__title">
           Di cosa hai bisogno in questo momento?
         </h2>
+        
+        <p className="areas__eyebrow">I tuoi spazi</p>
+
+        
       </header>
 
       <div className="areas__grid">

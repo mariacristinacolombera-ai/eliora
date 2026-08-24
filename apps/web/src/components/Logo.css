@@ -1,10 +1,5 @@
 .logo {
-  margin: 0;
-
-  font-size: clamp(2.4rem, 12vw, 3.4rem);
-  font-weight: 300;
-  line-height: 1;
-  letter-spacing: -0.045em;
-
-  color: var(--color-ink);
+  display: block;
+  width: clamp(7rem, 32vw, 8rem);
+  height: auto;
 }

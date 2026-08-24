@@ -343,6 +343,10 @@
   gap: 0.75rem;
 
   margin-top: 0.5rem;
+  padding: 1rem 1.1rem;
+
+  box-shadow: var(--shadow-paper);
+
 }
 
 .recipe-detail__fact {
@@ -535,31 +539,14 @@
 
 .recipe-detail__notes {
   margin-top: 2rem;
-  padding: 0.85rem 0;
+  padding: 1rem 1.1rem;
 
   border: 0;
-
-  background:
-    repeating-linear-gradient(
-      to right,
-      var(--color-warm-line-soft) 0,
-      var(--color-warm-line-soft) 0.45rem,
-      transparent 0.45rem,
-      transparent 0.85rem
-    )
-    top / 100% 1px no-repeat,
-
-    repeating-linear-gradient(
-      to right,
-      rgba(117, 101, 78, 0.28) 0,
-      rgba(117, 101, 78, 0.28) 0.45rem,
-      transparent 0.45rem,
-      transparent 0.85rem
-    )
-    bottom / 100% 1px no-repeat;
 }
 
 .recipe-detail__notes-label {
+  position: relative;
+
   margin: 0;
 
   font-size: 0.9rem;
@@ -568,12 +555,16 @@
   color: var(--color-warm-line);
 }
 
+
 .recipe-detail__notes-text {
   margin: 0.45rem 0 0;
 
   font-size: 0.95rem;
   line-height: 1.6;
-  font-style: italic;
+  font-family: var(--font-handwritten);
+font-style: normal;
+font-size: 1.08rem;
+line-height: 1.5;
 
   color: var(--color-ink);
 }

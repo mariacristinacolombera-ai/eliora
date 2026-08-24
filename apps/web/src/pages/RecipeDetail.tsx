@@ -251,7 +251,7 @@ function resetScaling() {
 }
 
   return (
-    <main className="recipe-detail">
+    <main className="recipe-detail surface-paper">
       <header className="recipe-detail__header">
         <button
           type="button"
@@ -512,7 +512,7 @@ function resetScaling() {
       Dettagli
     </h2>
 
-    <div className="recipe-detail__facts">
+    <div className="recipe-detail__facts surface-paper-soft">
           {recipe.servings && (
             <div className="recipe-detail__fact">
               <span className="recipe-detail__fact-label">
@@ -569,7 +569,7 @@ function resetScaling() {
       )}
 
       {recipe.notes && (
-        <section className="recipe-detail__notes">
+        <section className="recipe-detail__notes surface-paper-note">
           <p className="recipe-detail__notes-label">
             Note e consigli
           </p>

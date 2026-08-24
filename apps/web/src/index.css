@@ -8,21 +8,37 @@
 @import "@fontsource/poppins/500.css";
 @import "@fontsource/poppins/600.css";
 
+@import "@fontsource/kalam/400.css";
+
 :root {
   --font-content: "Source Serif 4", Georgia, serif;
   --font-ui: "Poppins", system-ui, sans-serif;
+  --font-handwritten: "Kalam", cursive;
 
 
   --color-ink: #2f3a38;
   --color-ink-soft: #35413e;
   --color-muted: #826f5c;
 
-  --color-primary: #315f57;
-  --color-primary-contrast: #fffdf8;
+--color-primary: #194d59;
+--color-primary-contrast: #fffdf8;
+
+--color-accent: #e99362;
+--color-accent-soft: rgba(233, 147, 98, 0.12);
+--color-accent-border: rgba(233, 147, 98, 0.32);
 
   --color-paper-light: #fffdf8;
   --color-paper: #f7f0e3;
   --color-paper-deep: #eee2cf;
+
+  --texture-paper: url("./assets/paper-texture.png");
+
+/* Intensità della materia */
+--texture-page-opacity: 0.38;
+--texture-surface-opacity: 0.16;
+--texture-note-opacity: 0.48;
+
+--shadow-paper: 0 2px 8px rgba(47, 58, 56, 0.055);
 
   --color-warm-note: #efdcbb;
   --color-warm-line: #a77142;
@@ -44,8 +60,8 @@
 
   --color-border-soft: rgba(117, 101, 78, 0.12);
   --color-border-card: rgba(117, 101, 78, 0.18);
-  --color-primary-soft: rgba(49, 95, 87, 0.08);
-  --color-primary-border: rgba(49, 95, 87, 0.25);
+  --color-primary-soft: rgba(25, 77, 89, 0.08);
+--color-primary-border: rgba(25, 77, 89, 0.25);
   --color-meta-fill: rgba(0, 0, 0, 0.045);
 
   --color-danger: #91504a;
@@ -80,4 +96,64 @@ select {
 #root {
   width: 100%;
   min-height: 100vh;
+}
+
+.surface-paper {
+  position: relative;
+  background-color: var(--color-paper);
+  isolation: isolate;
+}
+
+.surface-paper::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+
+  background-image: var(--texture-paper);
+  background-size: 900px auto;
+  background-repeat: repeat;
+
+  opacity: var(--texture-page-opacity);
+  pointer-events: none;
+}
+
+.surface-paper-soft {
+  position: relative;
+  background-color: rgba(255, 253, 248, 0.45);
+  isolation: isolate;
+}
+
+.surface-paper-soft::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+
+  background-image: var(--texture-paper);
+  background-size: 900px auto;
+  background-repeat: repeat;
+
+  opacity: var(--texture-surface-opacity);
+  pointer-events: none;
+}
+
+.surface-paper-note {
+  position: relative;
+  background-color: var(--color-warm-note);
+  isolation: isolate;
+}
+
+.surface-paper-note::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+
+  background-image: var(--texture-paper);
+  background-size: 900px auto;
+  background-repeat: repeat;
+
+  opacity: var(--texture-note-opacity);
+  pointer-events: none;
 }
