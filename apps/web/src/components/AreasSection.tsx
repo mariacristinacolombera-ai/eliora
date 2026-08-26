@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import gesture from "../assets/eliora-gesture-apricot.svg";
 import "./AreasSection.css";
 
 const areas = [
@@ -29,7 +30,14 @@ export default function AreasSection() {
 
   return (
     <section className="areas" aria-labelledby="areas-title">
-      <header className="areas__header">
+  <img
+    className="areas__gesture"
+    src={gesture}
+    alt=""
+    aria-hidden="true"
+  />
+
+  <header className="areas__header">
         <h2 id="areas-title" className="areas__title">
           Di cosa hai bisogno in questo momento?
         </h2>

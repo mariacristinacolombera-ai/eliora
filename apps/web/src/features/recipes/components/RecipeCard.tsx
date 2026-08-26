@@ -32,7 +32,7 @@ const parentRecipe = recipe.parentRecipeId
   
   return (
     <article
-  className={`recipe-card ${
+  className={`recipe-card surface-paper-soft ${
     isNew ? "recipe-card--new" : ""
   }`}
   onClick={() =>

@@ -39,8 +39,10 @@
   border: 0;
   background: transparent;
 
-  font: inherit;
-  font-size: 0.85rem;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 500;
+
   color: var(--color-muted);
 
   cursor: pointer;
@@ -49,17 +51,24 @@
 .recipes-page__title {
   margin: 1.25rem 0 0;
 
-  font-size: clamp(2.4rem, 12vw, 3.4rem);
-  font-weight: 300;
-  line-height: 1;
-  letter-spacing: -0.045em;
+  font-family: var(--font-content);
+  font-size: clamp(2.2rem, 10vw, 3rem);
+  font-weight: 400;
+  line-height: 1.05;
+
+  letter-spacing: -0.025em;
+
+  color: var(--color-ink);
 }
 
 .recipes-page__intro {
   max-width: 19rem;
   margin: 0.75rem 0 0;
 
-  line-height: 1.5;
+  font-family: var(--font-content);
+  font-size: 0.95rem;
+  line-height: 1.55;
+
   color: var(--color-muted);
 }
 .recipes-page__list{
@@ -68,12 +77,16 @@
 
     margin-top:2rem;
 }
+
 .recipes-page__section-title {
   margin: 2.25rem 0 0.75rem;
 
-  font-size: var(--text-title);
-  font-weight: 400;
-  color: var(--color-ink);
+  font-family: var(--font-content);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.25;
+
+  color: var(--color-primary);
 }
 
 .recipes-page__feedback-layer {

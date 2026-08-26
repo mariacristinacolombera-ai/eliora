@@ -28,7 +28,7 @@ const [newMemory, setNewMemory] = useState(memory ?? "");
   const navigate = useNavigate();
 
   return (
-    <article className="recipe-hero">
+    <article className="recipe-hero surface-paper-soft">
       <p className="recipe-hero__eyebrow">L’ultima volta</p>
 
       <h2 className="recipe-hero__title">{title}</h2>

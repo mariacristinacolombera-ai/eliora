@@ -142,7 +142,7 @@ const latestPreparedRecipe = recipes
       </div>
     </div>
 
-    <main className="recipes-page">
+    <main className="recipes-page surface-paper">
       <header className="recipes-page__header">
          
         <button

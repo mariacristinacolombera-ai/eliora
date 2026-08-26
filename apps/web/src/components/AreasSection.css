@@ -1,9 +1,32 @@
 .areas {
+  position: relative;
   width: 100%;
+}
+
+.areas__gesture {
+  position: absolute;
+
+  z-index: 0;
+
+  width: 155%;
+  max-width: none;
+
+  left: -18%;
+  top: 38%;
+
+  opacity: 0.21;
+
+  pointer-events: none;
 }
 
 .areas__header {
   margin-bottom: 1.25rem;
+}
+
+.areas__header,
+.areas__grid {
+  position: relative;
+  z-index: 1;
 }
 
 .areas__title {
@@ -88,5 +111,14 @@
 
   .areas__card {
     min-height: 7rem;
+  }
+}
+
+@media (min-width: 48rem) {
+  .areas__gesture {
+    width: 125%;
+    left: -8%;
+    top: 34%;
+    opacity: 0.16;
   }
 }

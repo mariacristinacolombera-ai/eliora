@@ -1,13 +1,14 @@
-.recipe-card{
+.recipe-card {
+  padding: 1rem;
 
-    padding:1rem;
+  border: 0;
+  border-radius: 0.9rem;
 
-    border: 1px solid var(--color-border-card);
+  color: var(--color-ink);
 
-    border-radius: var(--radius-card);
+  box-shadow: var(--shadow-paper);
 
-    background:rgba(255,252,245,.55);
-
+  cursor: pointer;
 }
 
 .recipe-card__header{
@@ -20,26 +21,27 @@
 
 }
 
-.recipe-card__title{
+.recipe-card__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 
-    display:flex;
+  margin: 0;
 
-    align-items:center;
+  font-family: var(--font-content);
+  font-size: var(--text-card-title);
+  font-weight: 600;
+  line-height: 1.25;
 
-    gap:.5rem;
-
-    margin:0;
-
-    font-size: var(--text-card-title);
-
-    font-weight:500;
-
+  color: var(--color-ink);
 }
 
 .recipe-card__variant-of {
   margin: 0.35rem 0 0;
 
+  font-family: var(--font-ui);
   font-size: var(--text-meta);
+
   color: var(--color-muted);
 }
 
@@ -51,26 +53,25 @@
 
 }
 
-.recipe-card__tags{
+.recipe-card__tags {
+  display: flex;
+  flex-wrap: wrap;
 
-    display:flex;
-    flex-wrap:wrap;
-    gap:.5rem;
-    margin-top:1rem;
-
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
 .recipe-card__memory {
   margin: 1rem 0 0;
-  padding-top: 0.9rem;
+  padding: 0;
 
-  border-top: 1px solid var(--color-border-soft);
+  border: 0;
 
-  font-size: var(--text-body);
+  font-family: var(--font-handwritten);
+  font-size: 1rem;
   line-height: 1.5;
-  font-style: italic;
 
-  color: var(--color-muted);
+  color: var(--color-ink-soft);
 }
 
 .recipe-card--new {
@@ -79,34 +80,23 @@
 
 @keyframes recipe-added {
   0% {
-    border-color: var(--color-primary);
-
     box-shadow:
-      0 0 0 0.22rem rgba(49, 95, 87, 0.18),
-      0 0.8rem 2rem rgba(49, 95, 87, 0.14);
+      0 0 0 0.22rem rgba(49, 95, 87, 0.16),
+      var(--shadow-paper);
+
+    transform: translateY(-2px);
   }
 
-  65% {
-    border-color: var(--color-primary);
-
+  60% {
     box-shadow:
-      0 0 0 0.18rem rgba(49, 95, 87, 0.13),
-      0 0.6rem 1.6rem rgba(49, 95, 87, 0.1);
-  }
+      0 0 0 0.12rem rgba(49, 95, 87, 0.1),
+      var(--shadow-paper);
 
-  88% {
-    border-color: rgba(49, 95, 87, 0.7);
-
-    box-shadow:
-      0 0 0 0.12rem rgba(49, 95, 87, 0.08);
+    transform: translateY(0);
   }
 
   100% {
-    border-color: rgba(117, 101, 78, 0.18);
-    box-shadow: none;
+    box-shadow: var(--shadow-paper);
+    transform: translateY(0);
   }
-}
-
-.recipe-card {
-  cursor: pointer;
 }

@@ -1,51 +1,55 @@
 .recipe-hero {
   padding: clamp(1.25rem, 5vw, 1.75rem);
 
-  border: 1px solid var(--color-border-card);
+  border: 0;
   border-radius: var(--radius-card);
 
-  background: rgba(255, 252, 245, 0.72);
   color: var(--color-ink);
 
-  box-shadow:
-  0 1rem 2.5rem rgba(92, 71, 43, 0.08),
-  inset 0 1px 0 rgba(255, 255, 255, 0.7);
-
-  backdrop-filter: blur(0.5rem);
+  box-shadow: var(--shadow-paper);
 }
 
 .recipe-hero__eyebrow {
   margin: 0;
 
+  font-family: var(--font-ui);
   font-size: var(--text-small);
   font-weight: 600;
-  color: var(--color-muted);
+
+  color: var(--color-accent);
 }
 
 .recipe-hero__title {
   margin: 0.5rem 0 0;
 
+  font-family: var(--font-content);
   font-size: clamp(1.8rem, 8vw, 2.4rem);
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.1;
+
+  color: var(--color-primary);
 }
 
 .recipe-hero__date {
   margin: 0.65rem 0 0;
 
+  font-family: var(--font-ui);
   font-size: var(--text-small);
+
   color: var(--color-muted);
 }
 
 .recipe-hero__memory {
   margin: 1.25rem 0 0;
-  padding-left: 1rem;
+  padding: 0;
 
-  border-left: 0.18rem solid var(--color-warm-line);
+  border: 0;
 
-  font-size: var(--text-body);
-  line-height: 1.55;
-  color: var(--color-ink-soft);
+  font-family: var(--font-handwritten);
+  font-size: 1.08rem;
+  line-height: 1.5;
+
+  color: var(--color-ink);
 }
 
 .recipe-hero__actions {
@@ -67,8 +71,8 @@
 }
 
 .recipe-hero__remember {
-  margin-top: 1rem;
-  padding-top: 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
 
   border-top: 1px solid var(--color-border-soft);
 }
@@ -76,15 +80,17 @@
 .recipe-hero__remember-input {
   width: 100%;
   min-height: 6rem;
-  padding: 0.85rem 1rem;
+  padding: 0.9rem 1rem;
 
-  border: 1px solid var(--color-border-card);
+  border: 1px solid var(--color-primary-border);
   border-radius: var(--radius-note);
 
-  background: rgba(255, 252, 245, 0.72);
+  background: rgba(255, 253, 248, 0.42);
+
   color: var(--color-ink);
 
-  font: inherit;
+  font-family: var(--font-handwritten);
+  font-size: 1.05rem;
   line-height: 1.5;
 
   resize: vertical;
@@ -103,4 +109,20 @@
   min-height: 3rem;
   font: inherit;
   font-weight: 600;
+}
+
+.recipe-hero__remember-input:focus {
+  outline: none;
+
+  border-color: rgba(49, 95, 87, 0.38);
+  box-shadow: 0 0 0 3px rgba(49, 95, 87, 0.06);
+}
+
+.recipe-hero__remember-input::placeholder {
+  font-family: var(--font-content);
+  font-size: 0.9rem;
+  font-style: italic;
+
+  color: var(--color-muted);
+  opacity: 0.75;
 }
