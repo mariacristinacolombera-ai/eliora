@@ -151,7 +151,7 @@
 
   padding-bottom: 0.7rem;
 
-  border-bottom: 1px solid rgba(49, 95, 87, 0.08);
+  border-bottom: 1px solid var(--color-primary-soft);
 }
 
 .recipe-detail__ingredient-amount {
@@ -266,7 +266,7 @@
   background: var(--color-primary-soft);
 
   box-shadow: 0 0 0 2px
-    rgba(49, 95, 87, 0.08);
+    var(--color-primary-soft);
 }
 
 .recipe-detail__steps {
@@ -290,7 +290,7 @@
 
   border-radius: 50%;
 
-  background: rgba(49, 95, 87, 0.1);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   color: var(--color-primary);
 
   font-size: 0.8rem;
@@ -608,7 +608,7 @@ gap: 0.4rem;
   margin-top: 1rem;
   padding: 1rem;
 
-  border: 1px solid rgba(49, 95, 87, 0.14);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 14%, transparent);
   border-radius: 1rem;
 
   background: rgba(255, 252, 245, 0.78);
@@ -667,7 +667,7 @@ gap: 0.4rem;
 }
 
 .recipe-detail__outcome-option--selected {
-  border-color: rgba(49, 95, 87, 0.4);
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
@@ -717,8 +717,8 @@ gap: 0.4rem;
 }
 
 .recipe-detail__memory-prompt-save {
-  border: 1px solid rgba(49, 95, 87, 0.24);
-  background: rgba(49, 95, 87, 0.08);
+  border: 1px solid var(--color-primary-border);
+  background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 

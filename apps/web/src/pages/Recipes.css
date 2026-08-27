@@ -118,7 +118,7 @@
   max-width: min(20rem, 90vw);
   padding: 0.95rem 1.25rem;
 
-  border: 1px solid rgba(49, 95, 87, 0.18);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, transparent);
   border-radius: 999px;
 
   background: rgba(255, 252, 245, 0.96);
