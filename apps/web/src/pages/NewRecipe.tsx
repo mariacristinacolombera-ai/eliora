@@ -378,7 +378,7 @@ setTimeout(() => {
 
   return (
     <main
-  className={`new-recipe-page ${
+  className={`new-recipe-page surface-paper ${
     isLeaving ? "new-recipe-page--leaving" : ""
   }`}
 >

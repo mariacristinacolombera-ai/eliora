@@ -9,22 +9,10 @@
 
   color: var(--color-ink);
 
-  background:
-    radial-gradient(
-      circle at 80% 14%,
-      rgba(255, 232, 177, 0.55),
-      transparent 45%
-    ),
-    linear-gradient(
-      145deg,
-      var(--color-paper-light),
-      var(--color-paper)
-    );
-
-    transition:
-  opacity 450ms ease,
-  filter 450ms ease,
-  transform 450ms ease;
+  transition:
+    opacity 450ms ease,
+    filter 450ms ease,
+    transform 450ms ease;
 }
 
 .new-recipe-page > * {
@@ -43,27 +31,38 @@
   border: 0;
   background: transparent;
 
-  font: inherit;
-  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 500;
+
   color: var(--color-muted);
 
   cursor: pointer;
-
-  display: inline-flex;
-align-items: center;
-gap: 0.35rem;
 }
 
 .new-recipe-page__title {
   margin: 1.25rem 0 0;
 
-  font-size: clamp(2.3rem, 11vw, 3.2rem);
-  font-weight: 300;
-  line-height: 1;
+  font-family: var(--font-content);
+  font-size: clamp(2.2rem, 10vw, 3rem);
+  font-weight: 400;
+  line-height: 1.05;
+
+  letter-spacing: -0.025em;
+
+  color: var(--color-ink);
 }
 
 .new-recipe-page__intro {
   margin: 0.75rem 0 0;
+
+  font-family: var(--font-content);
+  font-size: 0.95rem;
+  line-height: 1.5;
 
   color: var(--color-muted);
 }
@@ -74,7 +73,10 @@ gap: 0.35rem;
 }
 
 .new-recipe-page__label {
+  font-family: var(--font-ui);
   font-size: 0.85rem;
+  font-weight: 500;
+
   color: var(--color-muted);
 }
 
@@ -83,13 +85,26 @@ gap: 0.35rem;
   padding: 1rem;
 
   border: 1px solid var(--color-border-card);
-  border-radius: 1rem;
+  border-radius: 0.9rem;
 
-  background: rgba(255, 252, 245, 0.72);
+  background: rgba(255, 253, 248, 0.5);
+
   color: var(--color-ink);
 
-  font: inherit;
-  font-size: 1rem;
+  font-family: var(--font-ui);
+  font-size: 0.95rem;
+
+  box-shadow: var(--shadow-paper);
+}
+
+.new-recipe-page__input:focus {
+  outline: none;
+
+  border-color: var(--color-primary-border);
+
+  box-shadow:
+    0 0 0 3px var(--color-primary-soft),
+    var(--shadow-paper);
 }
 
 .new-recipe-page__rest .new-recipe-page__input {
@@ -134,14 +149,19 @@ gap: 0.35rem;
   align-items: center;
   gap: 0.6rem;
 
-  border: 1px solid var(--color-border-card);
-  border-radius: 1rem;
+  border: 0;
+  border-radius: 0.85rem;
 
-  background: rgba(255, 252, 245, 0.55);
+  background: rgba(255, 253, 248, 0.45);
+
   color: var(--color-ink);
 
-  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+
   text-align: left;
+
+  box-shadow: var(--shadow-paper);
 
   cursor: pointer;
 }
@@ -221,7 +241,7 @@ gap: 0.35rem;
 }
 
 .new-recipe-page__tag-suggestion:hover {
-  background: rgba(49, 95, 87, 0.08);
+  background: var(--color-primary-soft);
 }
 
 .new-recipe-page__tag-suggestion:active {
@@ -229,8 +249,15 @@ gap: 0.35rem;
 }
 
 .new-recipe-page__category--selected {
-  border-color: var(--color-primary);
-  background: rgba(49, 95, 87, 0.1);
+  background: var(--color-primary-soft);
+
+  color: var(--color-primary);
+
+  box-shadow:
+    0 0 0 1px var(--color-primary-border),
+    var(--shadow-paper);
+
+  font-weight: 500;
 }
 
 .new-recipe-page__category-icon {
@@ -241,8 +268,19 @@ gap: 0.35rem;
   margin-top: 1.5rem;
 }
 
+.new-recipe-page__memory-field .new-recipe-page__textarea {
+  font-family: var(--font-handwritten);
+  font-size: 1.08rem;
+  line-height: 1.5;
+}
+
 .new-recipe-page__textarea {
   min-height: 6rem;
+
+  font-family: var(--font-content);
+  font-size: 0.95rem;
+  line-height: 1.5;
+
   resize: vertical;
 }
 
@@ -264,16 +302,21 @@ gap: 0.35rem;
 .new-recipe-page__section-title {
   margin: 0;
 
+  font-family: var(--font-content);
   font-size: 1.25rem;
-  font-weight: 400;
+  font-weight: 600;
+  line-height: 1.25;
 
-  color: var(--color-ink);
+  color: var(--color-primary);
 }
 
 .new-recipe-page__section-intro {
   margin: 0.35rem 0 0;
 
+  font-family: var(--font-content);
   font-size: 0.85rem;
+  line-height: 1.45;
+
   color: var(--color-muted);
 }
 
@@ -297,31 +340,45 @@ gap: 0.35rem;
 .new-recipe-page__ingredient input {
   min-width: 0;
   width: 100%;
-
   padding: 0.8rem 0.65rem;
 
-  border: 1px solid var(--color-border-card);
-  border-radius: 0.8rem;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 0.75rem;
 
-  background: rgba(255, 252, 245, 0.72);
+  background: rgba(255, 253, 248, 0.5);
+
   color: var(--color-ink);
 
-  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+
+  box-shadow: var(--shadow-paper);
+}
+
+.new-recipe-page__ingredient input:focus {
+  outline: none;
+
+  border-color: var(--color-primary-border);
+
+  box-shadow:
+    0 0 0 3px var(--color-primary-soft),
+    var(--shadow-paper);
 }
 
 .new-recipe-page__ingredient-remove {
   width: 2.5rem;
   height: 2.5rem;
-
   padding: 0;
 
   border: 0;
   border-radius: 50%;
 
-  background: rgba(117, 101, 78, 0.08);
+  background: var(--color-meta-fill);
+
   color: var(--color-muted);
 
-  font: inherit;
+  display: grid;
+  place-items: center;
 
   cursor: pointer;
 }
@@ -335,7 +392,8 @@ gap: 0.35rem;
 
   color: var(--color-primary);
 
-  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
   font-weight: 600;
 
   cursor: pointer;
@@ -362,6 +420,49 @@ gap: 0.35rem;
   align-items: start;
 }
 
+.new-recipe-page__ingredient-add {
+  margin-top: 0.9rem;
+  padding: 0;
+
+  border: 0;
+  background: transparent;
+
+  color: var(--color-primary);
+
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.new-recipe-page__step-text {
+  width: 100%;
+  min-height: 5.5rem;
+  min-width: 0;
+
+  padding: 0.85rem;
+
+  border: 1px solid var(--color-border-soft);
+  border-radius: 0.75rem;
+
+  background: rgba(255, 253, 248, 0.5);
+
+  color: var(--color-ink);
+
+  font-family: var(--font-content);
+  font-size: 0.95rem;
+  line-height: 1.5;
+
+  box-shadow: var(--shadow-paper);
+
+  resize: vertical;
+}
+
 .new-recipe-page__step-number {
   width: 2rem;
   height: 2rem;
@@ -373,45 +474,30 @@ gap: 0.35rem;
 
   border-radius: 50%;
 
-  background: rgba(49, 95, 87, 0.1);
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-primary-border);
+
   color: var(--color-primary);
 
+  font-family: var(--font-ui);
   font-size: 0.8rem;
   font-weight: 600;
-}
-
-.new-recipe-page__step-text {
-  width: 100%;
-  min-height: 5.5rem;
-  min-width: 0;
-
-  padding: 0.85rem;
-
-  border: 1px solid var(--color-border-card);
-  border-radius: 0.9rem;
-
-  background: rgba(255, 252, 245, 0.72);
-  color: var(--color-ink);
-
-  font: inherit;
-  line-height: 1.5;
-
-  resize: vertical;
 }
 
 .new-recipe-page__step-remove {
   width: 2.5rem;
   height: 2.5rem;
-
   padding: 0;
 
   border: 0;
   border-radius: 50%;
 
-  background: rgba(117, 101, 78, 0.08);
+  background: var(--color-meta-fill);
+
   color: var(--color-muted);
 
-  font: inherit;
+  display: grid;
+  place-items: center;
 
   cursor: pointer;
 }
@@ -425,10 +511,12 @@ gap: 0.35rem;
 
   color: var(--color-primary);
 
-  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
   font-weight: 600;
 
   cursor: pointer;
+
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -481,15 +569,21 @@ gap: 0.35rem;
 .new-recipe-page__status-option {
   padding: 0.7rem 0.75rem;
 
-  border: 1px solid var(--color-border-card);
-  border-radius: 0.9rem;
+  border: 0;
+  border-radius: 0.85rem;
 
-  background: rgba(255, 252, 245, 0.5);
+  background: rgba(255, 253, 248, 0.45);
+
   color: var(--color-muted);
 
-  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+
+  box-shadow: var(--shadow-paper);
+
   cursor: pointer;
-  margin-top:0.8rem;
+
+  margin-top: 0.8rem;
 }
 
 .new-recipe-page__status-options {
@@ -499,10 +593,14 @@ gap: 0.35rem;
 }
 
 .new-recipe-page__status-option--selected {
-  border-color: rgba(49, 95, 87, 0.55);
-  background: rgba(49, 95, 87, 0.1);
+  background: var(--color-primary-soft);
 
   color: var(--color-primary);
+
+  box-shadow:
+    0 0 0 1px var(--color-primary-border),
+    var(--shadow-paper);
+
   font-weight: 500;
 }
 

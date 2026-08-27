@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
+import "./Login.css";
+import Logo from "../components/Logo";
 
 type LoginProps = {
   onLogin: () => void;
@@ -39,15 +41,27 @@ export default function Login({
   }
 
   return (
-    <main>
-      <form onSubmit={handleSubmit}>
-        <h1>Eliora</h1>
+  <main className="login-page surface-paper">
+    <div className="login-page__content">
+      <header className="login-page__header">
+        <Logo />
 
-        <p>Il tuo spazio, da ritrovare.</p>
+        <p className="login-page__intro">
+          Il tuo spazio, da ritrovare.
+        </p>
+      </header>
 
-        <label>
-          Email
+      <form
+        className="login-page__form"
+        onSubmit={handleSubmit}
+      >
+        <label className="login-page__field">
+          <span className="login-page__label">
+            Email
+          </span>
+
           <input
+            className="login-page__input"
             type="email"
             autoComplete="email"
             value={email}
@@ -58,9 +72,13 @@ export default function Login({
           />
         </label>
 
-        <label>
-          Password
+        <label className="login-page__field">
+          <span className="login-page__label">
+            Password
+          </span>
+
           <input
+            className="login-page__input"
             type="password"
             autoComplete="current-password"
             value={password}
@@ -72,14 +90,20 @@ export default function Login({
         </label>
 
         <button
+          className="login-page__submit eliora-button--primary"
           type="submit"
           disabled={isLoading}
         >
           {isLoading ? "Accesso..." : "Entra"}
         </button>
 
-        {message && <p>{message}</p>}
+        {message && (
+          <p className="login-page__message">
+            {message}
+          </p>
+        )}
       </form>
-    </main>
-  );
+    </div>
+  </main>
+);
 }
