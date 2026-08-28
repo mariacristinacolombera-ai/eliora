@@ -163,8 +163,12 @@ const [status, setStatus] = useState<RecipeStatus>(
   baseRecipe?.status ?? "saved",
 );
 
-const [sourceName, setSourceName] = useState("");
-const [sourceUrl, setSourceUrl] = useState("");
+const [sourceName, setSourceName] = useState(
+  baseRecipe?.source?.name ?? "",
+);
+const [sourceUrl, setSourceUrl] = useState(
+  baseRecipe?.source?.url ?? "",
+);
 
   const [isLeaving, setIsLeaving] = useState(false);
 
