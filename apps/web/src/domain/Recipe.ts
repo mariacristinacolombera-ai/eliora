@@ -20,6 +20,11 @@ export type RecipeTiming = {
   };
 };
 
+export type RecipeYield = {
+  quantity?: string;
+  unit?: string;
+};
+
 export type RecipeStatus = "saved" | "tried";
 
 export type RecipeSource = {
@@ -49,6 +54,7 @@ export type Recipe = {
   notes?: string;
 
   servings?: string;
+  yield?: RecipeYield;
   timing?: RecipeTiming;
 
   ingredients: Ingredient[];

@@ -503,6 +503,7 @@ function resetScaling() {
 
      {(
   recipe.servings ||
+  recipe.yield?.quantity ||
   recipe.timing?.prepMinutes ||
   recipe.timing?.cookMinutes ||
   recipe.timing?.rest
@@ -520,6 +521,20 @@ function resetScaling() {
               </span>
 
               <span>{recipe.servings}</span>
+            </div>
+          )}
+
+          {recipe.yield?.quantity && (
+            <div className="recipe-detail__fact">
+              <span className="recipe-detail__fact-label">
+                Resa
+              </span>
+
+              <span>
+                {[recipe.yield.quantity, recipe.yield.unit]
+                  .filter(Boolean)
+                  .join(" ")}
+              </span>
             </div>
           )}
 

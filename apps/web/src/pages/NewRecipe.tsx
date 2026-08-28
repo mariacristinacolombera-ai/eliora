@@ -134,6 +134,12 @@ const [steps, setSteps] = useState<RecipeStep[]>(
 const [servings, setServings] = useState(
   baseRecipe?.servings ?? "",
 );
+const [yieldQuantity, setYieldQuantity] = useState(
+  baseRecipe?.yield?.quantity ?? "",
+);
+const [yieldUnit, setYieldUnit] = useState(
+  baseRecipe?.yield?.unit ?? "",
+);
 const [prepMinutes, setPrepMinutes] = useState(
   baseRecipe?.timing?.prepMinutes?.toString() ?? "",
 );
@@ -275,6 +281,9 @@ function removeTag(tagToRemove: string) {
     return;
   }
 
+  const normalizedYieldQuantity = yieldQuantity.trim();
+  const normalizedYieldUnit = yieldUnit.trim();
+
  const newRecipe: Recipe = {
   id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
   title: title.trim(),
@@ -286,6 +295,12 @@ function removeTag(tagToRemove: string) {
   memory: undefined,
 
   servings: servings.trim() || undefined,
+  yield: normalizedYieldQuantity
+    ? {
+        quantity: normalizedYieldQuantity,
+        unit: normalizedYieldUnit || undefined,
+      }
+    : undefined,
 
   timing: {
     prepMinutes: prepMinutes
@@ -675,7 +690,7 @@ setTimeout(() => {
   </div>
 
   <div className="new-recipe-page__details-grid">
-    <div className="new-recipe-page__detail-field">
+    <div className="new-recipe-page__detail-field new-recipe-page__detail-field--servings">
       <label
         className="new-recipe-page__label"
         htmlFor="recipe-servings"
@@ -690,6 +705,43 @@ setTimeout(() => {
         value={servings}
         onChange={(event) => setServings(event.target.value)}
         placeholder="Es. 4"
+      />
+    </div>
+
+    <div className="new-recipe-page__detail-field">
+      <label
+        className="new-recipe-page__label"
+        htmlFor="recipe-yield-quantity"
+      >
+        Resa
+      </label>
+
+      <input
+        id="recipe-yield-quantity"
+        className="new-recipe-page__input"
+        type="text"
+        inputMode="decimal"
+        value={yieldQuantity}
+        onChange={(event) => setYieldQuantity(event.target.value)}
+        placeholder="Es. 17"
+      />
+    </div>
+
+    <div className="new-recipe-page__detail-field">
+      <label
+        className="new-recipe-page__label"
+        htmlFor="recipe-yield-unit"
+      >
+        Unità resa
+      </label>
+
+      <input
+        id="recipe-yield-unit"
+        className="new-recipe-page__input"
+        type="text"
+        value={yieldUnit}
+        onChange={(event) => setYieldUnit(event.target.value)}
+        placeholder="Es. würstel"
       />
     </div>
 

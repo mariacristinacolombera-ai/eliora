@@ -540,6 +540,10 @@
   gap: 0.5rem;
 }
 
+.new-recipe-page__detail-field--servings {
+  grid-column: 1 / -1;
+}
+
 .new-recipe-page__rest {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
