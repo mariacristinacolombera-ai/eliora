@@ -10,6 +10,7 @@
   display: flex;
   justify-content: center;
 
+  font-family: var(--font-content);
   color: var(--color-ink);
 }
 

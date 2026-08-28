@@ -16,7 +16,7 @@
 
 /* Categoria */
 .eliora-tag--category {
-  border: 1px solid rgba(49, 95, 87, 0.4);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
 
   background: var(--color-primary-soft);
   color: var(--color-primary);
@@ -31,8 +31,8 @@
 }
 
 .eliora-tag--category:hover {
-  background: rgba(49, 95, 87, 0.13);
-  border-color: rgba(49, 95, 87, 0.5);
+  background: color-mix(in srgb, var(--color-primary) 13%, transparent);
+  border-color: color-mix(in srgb, var(--color-primary) 50%, transparent);
 }
 
 .eliora-tag--category:active {
@@ -43,7 +43,7 @@
 .eliora-tag--status {
   border: 1px solid var(--color-primary-border);
 
-  background: rgba(49, 95, 87, 0.035);
+  background: color-mix(in srgb, var(--color-primary) 3.5%, transparent);
   color: var(--color-primary);
 
   font-weight: 500;

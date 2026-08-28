@@ -38,7 +38,7 @@
 
 .eliora-button--secondary:hover {
   background: var(--color-primary-soft);
-  border-color: rgba(49, 95, 87, 0.4);
+  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
 }
 
 .eliora-button--secondary:active {
@@ -105,7 +105,7 @@
 }
 
 .eliora-button--icon:hover {
-  background: rgba(49, 95, 87, 0.06);
+  background: color-mix(in srgb, var(--color-primary) 6%, transparent);
 }
 
 .eliora-button--icon:active {

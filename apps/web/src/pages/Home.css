@@ -15,6 +15,7 @@
 
   overflow: hidden;
 
+  font-family: var(--font-content);
   color: var(--color-ink);
 
   background:
