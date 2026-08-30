@@ -1,0 +1,177 @@
+import type { RecipePhoto } from "../domain/Recipe";
+import { supabase } from "./supabase";
+
+export const RECIPE_PHOTOS_BUCKET = "recipe-photos";
+export const RECIPE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
+export const RECIPE_PHOTO_SIGNED_URL_TTL_SECONDS = 60 * 60;
+
+function assertPathSegment(value: string, label: string): void {
+  if (!value || value.includes("/") || value.includes("\\")) {
+    throw new Error(`Invalid ${label}`);
+  }
+}
+
+async function getAuthenticatedUserId(): Promise<string> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  return user.id;
+}
+
+function assertPathsBelongToUser(
+  storagePaths: string[],
+  userId: string,
+): void {
+  const expectedPrefix = `${userId}/`;
+
+  if (
+    storagePaths.some(
+      (storagePath) => !storagePath.startsWith(expectedPrefix),
+    )
+  ) {
+    throw new Error("Recipe photo path does not belong to the current user");
+  }
+}
+
+export function createRecipePhotoId(): string {
+  return crypto.randomUUID();
+}
+
+export function buildRecipePhotoStoragePath(
+  userId: string,
+  recipeId: string,
+  photoId: string,
+): string {
+  assertPathSegment(userId, "user id");
+  assertPathSegment(recipeId, "recipe id");
+  assertPathSegment(photoId, "photo id");
+
+  return `${userId}/${recipeId}/${photoId}.webp`;
+}
+
+type UploadRecipePhotoInput = {
+  recipeId: string;
+  file: Blob;
+  photoId?: string;
+};
+
+export async function uploadRecipePhoto({
+  recipeId,
+  file,
+  photoId = createRecipePhotoId(),
+}: UploadRecipePhotoInput): Promise<RecipePhoto> {
+  if (file.type !== "image/webp") {
+    throw new Error("Recipe photos must be WebP images");
+  }
+
+  if (file.size > RECIPE_PHOTO_MAX_BYTES) {
+    throw new Error("Recipe photo exceeds the 5 MiB size limit");
+  }
+
+  const userId = await getAuthenticatedUserId();
+  const storagePath = buildRecipePhotoStoragePath(
+    userId,
+    recipeId,
+    photoId,
+  );
+
+  const { error } = await supabase.storage
+    .from(RECIPE_PHOTOS_BUCKET)
+    .upload(storagePath, file, {
+      contentType: "image/webp",
+      upsert: false,
+    });
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    id: photoId,
+    storagePath,
+  };
+}
+
+export async function removeRecipePhotos(
+  storagePaths: string[],
+): Promise<void> {
+  const uniquePaths = [...new Set(storagePaths)];
+
+  if (uniquePaths.length === 0) {
+    return;
+  }
+
+  const userId = await getAuthenticatedUserId();
+  assertPathsBelongToUser(uniquePaths, userId);
+
+  const { error } = await supabase.storage
+    .from(RECIPE_PHOTOS_BUCKET)
+    .remove(uniquePaths);
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function createRecipePhotoSignedUrls(
+  storagePaths: string[],
+  expiresIn = RECIPE_PHOTO_SIGNED_URL_TTL_SECONDS,
+): Promise<Record<string, string>> {
+  const uniquePaths = [...new Set(storagePaths)];
+
+  if (uniquePaths.length === 0) {
+    return {};
+  }
+
+  if (!Number.isInteger(expiresIn) || expiresIn <= 0) {
+    throw new Error("Signed URL expiry must be a positive integer");
+  }
+
+  const userId = await getAuthenticatedUserId();
+  assertPathsBelongToUser(uniquePaths, userId);
+
+  const { data, error } = await supabase.storage
+    .from(RECIPE_PHOTOS_BUCKET)
+    .createSignedUrls(uniquePaths, expiresIn);
+
+  if (error) {
+    throw error;
+  }
+
+  if (data.length !== uniquePaths.length) {
+    throw new Error(
+      `Failed to create recipe photo signed URLs: expected ${uniquePaths.length} results, received ${data.length}`,
+    );
+  }
+
+  const signedUrls: Record<string, string> = {};
+
+  data.forEach((result, index) => {
+    if (
+      result.error ||
+      result.path === null ||
+      result.signedUrl === null
+    ) {
+      const storagePath = result.path ?? uniquePaths[index] ?? "unknown";
+      const reason = result.error ?? "missing path or signed URL";
+
+      throw new Error(
+        `Failed to create signed URL for recipe photo "${storagePath}" at batch index ${index}: ${reason}`,
+      );
+    }
+
+    signedUrls[result.path] = result.signedUrl;
+  });
+
+  return signedUrls;
+}
