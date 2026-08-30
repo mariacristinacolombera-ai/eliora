@@ -1,5 +1,8 @@
 import { useNavigate, useParams } from "react-router-dom";
-import type { Recipe } from "../domain/Recipe";
+import type {
+  Recipe,
+  RecipePreparation,
+} from "../domain/Recipe";
 import { useState } from "react";
 import {
   parseQuantity,
@@ -31,6 +34,14 @@ export default function RecipeDetail({
   const { recipeId } = useParams();
   const [showMemoryPrompt, setShowMemoryPrompt] = useState(false);
   const [newMemory, setNewMemory] = useState("");
+  const [openMemoryMenuId, setOpenMemoryMenuId] =
+  useState<string | null>(null);
+  const [editingMemoryId, setEditingMemoryId] =
+  useState<string | null>(null);
+  const [editingMemoryText, setEditingMemoryText] =
+  useState("");
+  const [deletingMemoryId, setDeletingMemoryId] =
+  useState<string | null>(null);
   const [newOutcome, setNewOutcome] = useState<
   "liked" | "neutral" | "disliked" | ""
   >("");
@@ -75,6 +86,8 @@ const [
       </main>
     );
   }
+
+  const currentRecipe = recipe;
 
  const baseServings = Number(recipe.servings);
 
@@ -177,6 +190,200 @@ function formatOutcome(
     case "disliked":
       return "Non mi è piaciuta";
   }
+}
+
+function hasUniquePreparationId(preparationId: string) {
+  return (
+    Boolean(preparationId) &&
+    currentRecipe.preparations.filter(
+      (preparation) => preparation.id === preparationId,
+    ).length === 1
+  );
+}
+
+function startEditingMemory(preparation: RecipePreparation) {
+  if (!hasUniquePreparationId(preparation.id) || !preparation.memory) {
+    return;
+  }
+
+  setEditingMemoryId(preparation.id);
+  setEditingMemoryText(preparation.memory);
+  setOpenMemoryMenuId(null);
+  setDeletingMemoryId(null);
+}
+
+function cancelEditingMemory() {
+  setEditingMemoryId(null);
+  setEditingMemoryText("");
+}
+
+function saveEditedMemory(preparationId: string) {
+  const normalizedMemory = editingMemoryText.trim();
+
+  if (!normalizedMemory || !hasUniquePreparationId(preparationId)) {
+    return;
+  }
+
+  onUpdate({
+    ...currentRecipe,
+    preparations: currentRecipe.preparations.map((preparation) =>
+      preparation.id === preparationId
+        ? {
+            ...preparation,
+            memory: normalizedMemory,
+          }
+        : preparation,
+    ),
+  });
+
+  cancelEditingMemory();
+}
+
+function requestDeleteMemory(preparationId: string) {
+  if (!hasUniquePreparationId(preparationId)) {
+    return;
+  }
+
+  setDeletingMemoryId(preparationId);
+  setOpenMemoryMenuId(null);
+  cancelEditingMemory();
+}
+
+function confirmDeleteMemory(preparationId: string) {
+  if (!hasUniquePreparationId(preparationId)) {
+    return;
+  }
+
+  onUpdate({
+    ...currentRecipe,
+    preparations: currentRecipe.preparations.map((preparation) => {
+      if (preparation.id !== preparationId) {
+        return preparation;
+      }
+
+      const preparationWithoutMemory = { ...preparation };
+      delete preparationWithoutMemory.memory;
+
+      return preparationWithoutMemory;
+    }),
+  });
+
+  setDeletingMemoryId(null);
+}
+
+function renderMemoryActions(preparation: RecipePreparation) {
+  if (
+    !preparation.memory ||
+    !hasUniquePreparationId(preparation.id) ||
+    editingMemoryId === preparation.id ||
+    deletingMemoryId === preparation.id
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="recipe-detail__memory-actions">
+      <button
+        type="button"
+        className="recipe-detail__memory-menu-trigger"
+        aria-label="Azioni ricordo"
+        aria-expanded={openMemoryMenuId === preparation.id}
+        onClick={() =>
+          setOpenMemoryMenuId((currentId) =>
+            currentId === preparation.id
+              ? null
+              : preparation.id,
+          )
+        }
+      >
+        •••
+      </button>
+
+      {openMemoryMenuId === preparation.id && (
+        <div className="recipe-detail__memory-menu">
+          <button
+            type="button"
+            onClick={() => startEditingMemory(preparation)}
+          >
+            Modifica ricordo
+          </button>
+
+          <button
+            type="button"
+            className="recipe-detail__memory-menu-delete"
+            onClick={() => requestDeleteMemory(preparation.id)}
+          >
+            Elimina ricordo
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function renderEditableMemory(preparation: RecipePreparation) {
+  if (editingMemoryId === preparation.id) {
+    return (
+      <div className="recipe-detail__memory-editor">
+        <textarea
+          className="recipe-detail__memory-prompt-input"
+          value={editingMemoryText}
+          onChange={(event) =>
+            setEditingMemoryText(event.target.value)
+          }
+          autoFocus
+        />
+
+        <div className="recipe-detail__memory-prompt-actions">
+          <button
+            type="button"
+            className="recipe-detail__memory-prompt-skip"
+            onClick={cancelEditingMemory}
+          >
+            Annulla
+          </button>
+
+          <button
+            type="button"
+            className="recipe-detail__memory-prompt-save"
+            disabled={!editingMemoryText.trim()}
+            onClick={() => saveEditedMemory(preparation.id)}
+          >
+            Custodisci
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (deletingMemoryId === preparation.id) {
+    return (
+      <div className="recipe-detail__memory-delete-confirm">
+        <p>Eliminare questo ricordo?</p>
+        <p>La preparazione e la sua data resteranno nello storico.</p>
+
+        <div className="recipe-detail__memory-prompt-actions">
+          <button
+            type="button"
+            className="recipe-detail__memory-prompt-skip"
+            onClick={() => setDeletingMemoryId(null)}
+          >
+            Annulla
+          </button>
+
+          <button
+            type="button"
+            className="recipe-detail__memory-delete-button"
+            onClick={() => confirmDeleteMemory(preparation.id)}
+          >
+            Elimina
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
   function markAsTried() {
@@ -756,13 +963,23 @@ onBlur={() => {
 
       {(lastPreparation?.memory || recipe.memory) && (
   <section className="recipe-detail__memory">
-    <p className="recipe-detail__memory-label">
-      Ricordi
-    </p>
+    <div className="recipe-detail__memory-heading">
+      <p className="recipe-detail__memory-label">
+        Ricordi
+      </p>
 
-    <p className="recipe-detail__memory-text">
-      {lastPreparation?.memory || recipe.memory}
-    </p>
+      {lastPreparation?.memory && renderMemoryActions(lastPreparation)}
+    </div>
+
+    {lastPreparation?.memory &&
+    (editingMemoryId === lastPreparation.id ||
+      deletingMemoryId === lastPreparation.id) ? (
+      renderEditableMemory(lastPreparation)
+    ) : (
+      <p className="recipe-detail__memory-text">
+        {lastPreparation?.memory || recipe.memory}
+      </p>
+    )}
   </section>
 )}
 
@@ -804,9 +1021,20 @@ onBlur={() => {
 )}
 
             {preparation.memory && (
-              <p className="recipe-detail__history-memory">
-                {preparation.memory}
-              </p>
+              <>
+                {editingMemoryId === preparation.id ||
+                deletingMemoryId === preparation.id ? (
+                  renderEditableMemory(preparation)
+                ) : (
+                  <div className="recipe-detail__history-memory-row">
+                    <p className="recipe-detail__history-memory">
+                      {preparation.memory}
+                    </p>
+
+                    {renderMemoryActions(preparation)}
+                  </div>
+                )}
+              </>
             )}
           </div>
         ))}

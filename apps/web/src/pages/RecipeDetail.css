@@ -311,6 +311,65 @@
   color: var(--color-muted);
 }
 
+.recipe-detail__memory-heading,
+.recipe-detail__history-memory-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.recipe-detail__memory-actions {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.recipe-detail__memory-menu-trigger {
+  padding: 0 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.recipe-detail__memory-menu {
+  position: absolute;
+  z-index: 2;
+  top: 1.6rem;
+  right: 0;
+
+  display: grid;
+  min-width: 10rem;
+  padding: 0.3rem;
+
+  border: 1px solid var(--color-border-soft);
+  border-radius: 0.7rem;
+  background: var(--color-paper);
+  box-shadow: var(--shadow-paper);
+}
+
+.recipe-detail__memory-menu button {
+  padding: 0.55rem 0.65rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recipe-detail__memory-menu button:hover {
+  background: var(--color-primary-soft);
+}
+
+.recipe-detail__memory-menu .recipe-detail__memory-menu-delete {
+  color: var(--color-danger, #8f3f35);
+}
+
 .recipe-detail__memory-text {
   margin: 0.6rem 0 0;
 
@@ -445,6 +504,49 @@
   font-size: 0.9rem;
   line-height: 1.55;
   color: var(--color-muted);
+}
+
+.recipe-detail__history-memory-row .recipe-detail__history-memory {
+  flex: 1;
+}
+
+.recipe-detail__memory-editor,
+.recipe-detail__memory-delete-confirm {
+  margin-top: 0.75rem;
+}
+
+.recipe-detail__memory-delete-confirm {
+  padding: 0.8rem;
+  border: 1px solid var(--color-border-soft);
+  border-radius: 0.8rem;
+  background: rgba(255, 252, 245, 0.72);
+}
+
+.recipe-detail__memory-delete-confirm p {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.recipe-detail__memory-delete-confirm p + p {
+  margin-top: 0.25rem;
+  color: var(--color-muted);
+}
+
+.recipe-detail__memory-delete-button {
+  padding: 0.65rem 0.9rem;
+  border: 1px solid rgba(143, 63, 53, 0.35);
+  border-radius: 999px;
+  background: rgba(143, 63, 53, 0.08);
+  color: var(--color-danger, #8f3f35);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.recipe-detail__memory-prompt-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .recipe-detail__variants {

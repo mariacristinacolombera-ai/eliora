@@ -607,7 +607,7 @@ setTimeout(() => {
       placeholder="Consigli, modifiche da provare, promemoria..."
     />
 
-    {status === "tried" && (
+    {!isEditing && status === "tried" && (
       <div className="new-recipe-page__memory-field">
         <label
           className="new-recipe-page__label"
