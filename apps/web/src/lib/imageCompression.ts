@@ -2,9 +2,13 @@ import { RECIPE_PHOTO_MAX_BYTES } from "./recipePhotosRepository";
 
 const SUPPORTED_IMAGE_TYPES = new Set([
   "image/jpeg",
+  "image/jpg",
+  "image/pjpeg",
   "image/png",
   "image/webp",
 ]);
+
+const SUPPORTED_IMAGE_FILE_EXTENSION = /\.(?:jpe?g|png|webp)$/i;
 
 const COMPRESSION_ATTEMPTS = [
   { maxLongSide: 1920, quality: 82 },
@@ -92,7 +96,14 @@ function createResizedImageData(
 export async function compressRecipePhoto(
   source: File | Blob,
 ): Promise<Blob> {
-  if (!SUPPORTED_IMAGE_TYPES.has(source.type)) {
+  const normalizedType = source.type.trim().toLowerCase();
+  const hasSupportedType = SUPPORTED_IMAGE_TYPES.has(normalizedType);
+  const hasSupportedFileExtension =
+    normalizedType === "" &&
+    source instanceof File &&
+    SUPPORTED_IMAGE_FILE_EXTENSION.test(source.name);
+
+  if (!hasSupportedType && !hasSupportedFileExtension) {
     throw new Error(
       `Unsupported recipe photo type "${source.type || "unknown"}". Use JPEG, PNG, or WebP.`,
     );
