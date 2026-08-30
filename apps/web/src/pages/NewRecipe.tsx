@@ -17,6 +17,11 @@ import type {
   RecipeStatus,
   RecipeStep,
 } from "../domain/Recipe";
+import { compressRecipePhoto } from "../lib/imageCompression";
+import {
+  removeRecipePhotos,
+  uploadRecipePhoto,
+} from "../lib/recipePhotosRepository";
 
 const recipeCategories = [
   { id: "primo", label: "Primo", icon: "🍝" },
@@ -29,7 +34,7 @@ const recipeCategories = [
 ];
 
 type NewRecipeProps = {
-  onSave: (recipe: Recipe) => void;
+  onSave: (recipe: Recipe) => Promise<void>;
   recipes?: Recipe[];
   onUpdate?: (recipe: Recipe) => void;
 };
@@ -162,6 +167,10 @@ const [restOvernight, setRestOvernight] = useState(
 const [status, setStatus] = useState<RecipeStatus>(
   baseRecipe?.status ?? "saved",
 );
+const [photoFile, setPhotoFile] = useState<File>();
+const [photoInputKey, setPhotoInputKey] = useState(0);
+const [isSubmitting, setIsSubmitting] = useState(false);
+const [saveError, setSaveError] = useState<string>();
 
 const [sourceName, setSourceName] = useState(
   baseRecipe?.source?.name ?? "",
@@ -280,16 +289,85 @@ function removeTag(tagToRemove: string) {
   );
 }
 
-  function handleSave() {
-  if (!title.trim() || !category || isLeaving) {
+  async function handleSave() {
+  if (!title.trim() || !category || isLeaving || isSubmitting) {
     return;
   }
 
+  setSaveError(undefined);
+
   const normalizedYieldQuantity = yieldQuantity.trim();
   const normalizedYieldUnit = yieldUnit.trim();
+  const recipeId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  if (isEditing && baseRecipe && onUpdate) {
+    const updatedRecipe: Recipe = {
+      id: baseRecipe.id,
+      title: title.trim(),
+      parentRecipeId: baseRecipe.parentRecipeId,
+      category,
+      tags,
+      notes: notes.trim() || undefined,
+      memory: baseRecipe.memory,
+      servings: servings.trim() || undefined,
+      yield: normalizedYieldQuantity
+        ? {
+            quantity: normalizedYieldQuantity,
+            unit: normalizedYieldUnit || undefined,
+          }
+        : undefined,
+      timing: {
+        prepMinutes: prepMinutes ? Number(prepMinutes) : undefined,
+        cookMinutes: cookMinutes ? Number(cookMinutes) : undefined,
+        rest:
+          restOvernight || restValue
+            ? {
+                value: restOvernight ? undefined : Number(restValue),
+                unit: restOvernight ? undefined : restUnit,
+                overnight: restOvernight || undefined,
+              }
+            : undefined,
+      },
+      ingredients: ingredients.filter((ingredient) => ingredient.name.trim()),
+      steps: steps.filter((step) => step.text.trim()),
+      status,
+      source:
+        sourceName.trim() || sourceUrl.trim()
+          ? {
+              name: sourceName.trim() || undefined,
+              url: sourceUrl.trim() || undefined,
+            }
+          : undefined,
+      photos: baseRecipe.photos,
+      coverPhotoId: baseRecipe.coverPhotoId,
+      preparations: baseRecipe.preparations,
+    };
+
+    onUpdate(updatedRecipe);
+    setIsLeaving(true);
+
+    setTimeout(() => {
+      navigate(`/recipes/${baseRecipe.id}`);
+    }, 550);
+
+    return;
+  }
+
+  setIsSubmitting(true);
+  let uploadedPhoto: Awaited<ReturnType<typeof uploadRecipePhoto>> | undefined;
+  let operation: "photo" | "save" = "photo";
+
+  try {
+    if (photoFile) {
+      const compressedPhoto = await compressRecipePhoto(photoFile);
+      uploadedPhoto = await uploadRecipePhoto({
+        recipeId,
+        file: compressedPhoto,
+      });
+    }
 
  const newRecipe: Recipe = {
-  id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  id: recipeId,
   title: title.trim(),
   parentRecipeId: baseRecipe?.id,
   category,
@@ -340,16 +418,19 @@ function removeTag(tagToRemove: string) {
   ),
 
   status,
+  photos: uploadedPhoto ? [uploadedPhoto] : undefined,
+  coverPhotoId: uploadedPhoto?.id,
 
   preparations:
-  status === "tried" && memory.trim()
+  status === "tried"
     ? [
         {
           id: `${Date.now()}-${Math.random()
             .toString(36)
             .slice(2)}`,
           preparedAt: new Date().toISOString(),
-          memory: memory.trim(),
+          memory: memory.trim() || undefined,
+          photoId: uploadedPhoto?.id,
         },
       ]
     : [],
@@ -361,27 +442,10 @@ function removeTag(tagToRemove: string) {
         url: sourceUrl.trim() || undefined,
       }
     : undefined,
-};
+ };
 
-  if (isEditing && baseRecipe && onUpdate) {
-  onUpdate({
-    ...newRecipe,
-    id: baseRecipe.id,
-    parentRecipeId: baseRecipe.parentRecipeId,
-    memory: baseRecipe.memory,
-    preparations: baseRecipe.preparations,
-  });
-
-  setIsLeaving(true);
-
-  setTimeout(() => {
-    navigate(`/recipes/${baseRecipe.id}`);
-  }, 550);
-
-  return;
-}
-
-onSave(newRecipe);
+operation = "save";
+await onSave(newRecipe);
 
 setIsLeaving(true);
 
@@ -392,6 +456,28 @@ setTimeout(() => {
     },
   });
 }, 550);
+
+  } catch (error) {
+    if (uploadedPhoto) {
+      try {
+        await removeRecipePhotos([uploadedPhoto.storagePath]);
+      } catch (cleanupError) {
+        console.error(
+          "Errore nella rimozione della foto dopo il salvataggio fallito:",
+          cleanupError,
+        );
+      }
+    }
+
+    console.error("Errore nella creazione della ricetta:", error);
+    setSaveError(
+      operation === "photo"
+        ? "Non è stato possibile preparare o caricare la foto. Scegli un file JPEG, PNG o WebP e riprova."
+        : "Non è stato possibile salvare la ricetta. I dati del form sono ancora qui: riprova.",
+    );
+  } finally {
+    setIsSubmitting(false);
+  }
 
   }
 
@@ -589,6 +675,54 @@ setTimeout(() => {
     </button>
   </div>
 </section>  
+
+{!isEditing && (
+  <section className="new-recipe-page__photo">
+    <label
+      className="new-recipe-page__label"
+      htmlFor="recipe-photo"
+    >
+      {status === "saved"
+        ? "Foto di copertina"
+        : "Foto della prima preparazione"}
+    </label>
+
+    {status === "tried" && (
+      <p className="new-recipe-page__photo-note">
+        Diventerà anche la foto della ricetta.
+      </p>
+    )}
+
+    <input
+      key={photoInputKey}
+      id="recipe-photo"
+      className="new-recipe-page__photo-input"
+      type="file"
+      accept="image/jpeg,image/png,image/webp"
+      disabled={isSubmitting || isLeaving}
+      onChange={(event) => {
+        setPhotoFile(event.target.files?.[0]);
+        setSaveError(undefined);
+      }}
+    />
+
+    {photoFile && (
+      <div className="new-recipe-page__photo-selection">
+        <span title={photoFile.name}>{photoFile.name}</span>
+        <button
+          type="button"
+          disabled={isSubmitting || isLeaving}
+          onClick={() => {
+            setPhotoFile(undefined);
+            setPhotoInputKey((currentKey) => currentKey + 1);
+          }}
+        >
+          Rimuovi
+        </button>
+      </div>
+    )}
+  </section>
+)}
 
  <div className="new-recipe-page__context-field">
   <div className="new-recipe-page__context-content">
@@ -984,11 +1118,16 @@ setTimeout(() => {
       <button
         className="new-recipe-page__continue eliora-button--primary"
         type="button"
-        disabled={!title.trim() || !category || isLeaving}
+        disabled={!title.trim() || !category || isLeaving || isSubmitting}
         onClick={handleSave}
       >
-        Salva ricetta
+        {isSubmitting ? "Salvataggio..." : "Salva ricetta"}
       </button>
+      {saveError && (
+        <p className="new-recipe-page__save-error" role="alert">
+          {saveError}
+        </p>
+      )}
     </main>
   );
 }

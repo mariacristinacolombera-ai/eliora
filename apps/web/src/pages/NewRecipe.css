@@ -613,6 +613,87 @@
   margin-top: 1rem;
 }
 
+.new-recipe-page__photo {
+  margin-top: 1rem;
+  padding: 0.85rem;
+
+  border: 1px solid var(--color-border-soft);
+  border-radius: 0.9rem;
+
+  background: rgba(255, 253, 248, 0.45);
+  box-shadow: var(--shadow-paper);
+}
+
+.new-recipe-page__photo-note {
+  margin: 0.25rem 0 0;
+
+  color: var(--color-muted);
+  font-size: var(--text-small);
+}
+
+.new-recipe-page__photo-input {
+  width: 100%;
+  margin-top: 0.65rem;
+
+  color: var(--color-muted);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+}
+
+.new-recipe-page__photo-input::file-selector-button {
+  margin-right: 0.65rem;
+  padding: 0.5rem 0.7rem;
+
+  border: 1px solid var(--color-primary-border);
+  border-radius: 0.7rem;
+
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+
+  font: inherit;
+  cursor: pointer;
+}
+
+.new-recipe-page__photo-selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  margin-top: 0.65rem;
+
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+}
+
+.new-recipe-page__photo-selection span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.new-recipe-page__photo-selection button {
+  padding: 0;
+
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+
+  font: inherit;
+  cursor: pointer;
+}
+
+.new-recipe-page__save-error {
+  margin: 0.75rem auto 0;
+
+  color: var(--color-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  line-height: 1.45;
+}
+
 .new-recipe-page__context-field {
   width: min(100%, var(--content-width));
   margin: 1rem auto 0;

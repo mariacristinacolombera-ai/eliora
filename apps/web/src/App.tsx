@@ -76,19 +76,12 @@ export default function App() {
 
 
   async function addRecipe(recipe: Recipe) {
+  await saveRecipeToSupabase(recipe);
+
   setRecipes((currentRecipes) => [
     recipe,
     ...currentRecipes,
   ]);
-
-  try {
-    await saveRecipeToSupabase(recipe);
-  } catch (error) {
-    console.error(
-      "Errore nel salvataggio della ricetta su Supabase:",
-      error,
-    );
-  }
 }
 
 async function updateRecipe(updatedRecipe: Recipe) {
