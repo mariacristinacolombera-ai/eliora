@@ -295,11 +295,12 @@
 
 .recipe-detail__memory {
   margin-top: 2.5rem;
-  padding: 1.2rem;
+  padding: clamp(1.25rem, 5vw, 1.75rem);
 
-  border-left: 0.18rem solid rgba(167, 113, 66, 0.55);
+  border: 0;
+  border-radius: var(--radius-card);
 
-  background: rgba(255, 252, 245, 0.45);
+  box-shadow: var(--shadow-paper);
 }
 
 .recipe-detail__memory-label {
@@ -373,8 +374,12 @@
 .recipe-detail__memory-text {
   margin: 0.6rem 0 0;
 
-  font-style: italic;
+  font-family: var(--font-handwritten);
+  font-size: 1.08rem;
+  font-style: normal;
   line-height: 1.55;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
 }
 
 .recipe-detail__facts-section {
@@ -501,9 +506,11 @@
 .recipe-detail__history-memory {
   margin: 0.35rem 0 0;
 
-  font-size: 0.9rem;
-  line-height: 1.55;
-  color: var(--color-muted);
+  font-family: var(--font-handwritten);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-ink-soft);
+  overflow-wrap: anywhere;
 }
 
 .recipe-detail__history-memory-row .recipe-detail__history-memory {
@@ -513,6 +520,11 @@
 .recipe-detail__memory-editor,
 .recipe-detail__memory-delete-confirm {
   margin-top: 0.75rem;
+}
+
+.recipe-detail__memory-editor .recipe-detail__memory-prompt-input {
+  font-family: var(--font-handwritten);
+  font-size: 1.05rem;
 }
 
 .recipe-detail__memory-delete-confirm {

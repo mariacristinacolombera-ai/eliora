@@ -962,7 +962,7 @@ onBlur={() => {
       )}
 
       {(lastPreparation?.memory || recipe.memory) && (
-  <section className="recipe-detail__memory">
+  <section className="recipe-detail__memory surface-paper-soft">
     <div className="recipe-detail__memory-heading">
       <p className="recipe-detail__memory-label">
         Ricordi
