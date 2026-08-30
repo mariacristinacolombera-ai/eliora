@@ -355,11 +355,12 @@ function removeTag(tagToRemove: string) {
 
   setIsSubmitting(true);
   let uploadedPhoto: Awaited<ReturnType<typeof uploadRecipePhoto>> | undefined;
-  let operation: "photo" | "save" = "photo";
+  let operation: "compression" | "upload" | "save" = "compression";
 
   try {
     if (photoFile) {
       const compressedPhoto = await compressRecipePhoto(photoFile);
+      operation = "upload";
       uploadedPhoto = await uploadRecipePhoto({
         recipeId,
         file: compressedPhoto,
@@ -471,9 +472,11 @@ setTimeout(() => {
 
     console.error("Errore nella creazione della ricetta:", error);
     setSaveError(
-      operation === "photo"
-        ? "Non è stato possibile preparare o caricare la foto. Scegli un file JPEG, PNG o WebP e riprova."
-        : "Non è stato possibile salvare la ricetta. I dati del form sono ancora qui: riprova.",
+      operation === "compression"
+        ? "Non è stato possibile leggere o elaborare la foto. Scegli un file JPEG, PNG o WebP valido e riprova."
+        : operation === "upload"
+          ? "Non è stato possibile caricare la foto. Controlla la connessione e riprova."
+          : "Non è stato possibile salvare la ricetta. I dati del form sono ancora qui: riprova.",
     );
   } finally {
     setIsSubmitting(false);
