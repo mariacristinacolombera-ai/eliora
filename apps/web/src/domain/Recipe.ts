@@ -32,11 +32,17 @@ export type RecipeSource = {
   url?: string;
 };
 
+export type RecipePhoto = {
+  id: string;
+  storagePath: string;
+};
+
 export type RecipePreparation = {
   id: string;
   preparedAt: string;
   outcome?: "liked" | "neutral" | "disliked";
   memory?: string;
+  photoId?: string;
 };
 
 export type Recipe = {
@@ -60,5 +66,7 @@ export type Recipe = {
   ingredients: Ingredient[];
   steps: RecipeStep[];
 
+  photos?: RecipePhoto[];
+  coverPhotoId?: string;
   preparations: RecipePreparation[];
 };
