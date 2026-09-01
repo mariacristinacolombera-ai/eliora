@@ -36,7 +36,7 @@ const recipeCategories = [
 type NewRecipeProps = {
   onSave: (recipe: Recipe) => Promise<void>;
   recipes?: Recipe[];
-  onUpdate?: (recipe: Recipe) => void;
+  onUpdate?: (recipe: Recipe) => Promise<boolean>;
 };
 
 export default function NewRecipe({
@@ -169,6 +169,7 @@ const [status, setStatus] = useState<RecipeStatus>(
 );
 const [photoFile, setPhotoFile] = useState<File>();
 const [photoInputKey, setPhotoInputKey] = useState(0);
+const [removeExistingCover, setRemoveExistingCover] = useState(false);
 const [isSubmitting, setIsSubmitting] = useState(false);
 const [saveError, setSaveError] = useState<string>();
 
@@ -301,6 +302,39 @@ function removeTag(tagToRemove: string) {
   const recipeId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   if (isEditing && baseRecipe && onUpdate) {
+    setIsSubmitting(true);
+    let uploadedPhoto: Awaited<ReturnType<typeof uploadRecipePhoto>> | undefined;
+    let operation: "compression" | "upload" | "save" = "compression";
+    const oldCoverPhoto = baseRecipe.photos?.find(
+      (photo) => photo.id === baseRecipe.coverPhotoId,
+    );
+    const oldCoverIsPreparationPhoto = baseRecipe.preparations.some(
+      (preparation) => preparation.photoId === baseRecipe.coverPhotoId,
+    );
+
+    try {
+      if (photoFile) {
+        const compressedPhoto = await compressRecipePhoto(photoFile);
+        operation = "upload";
+        uploadedPhoto = await uploadRecipePhoto({
+          recipeId: baseRecipe.id,
+          file: compressedPhoto,
+        });
+      }
+
+      const shouldRemoveOldCover = Boolean(
+        oldCoverPhoto && (uploadedPhoto || removeExistingCover),
+      );
+      const retainedPhotos = (baseRecipe.photos ?? []).filter(
+        (photo) =>
+          !shouldRemoveOldCover ||
+          oldCoverIsPreparationPhoto ||
+          photo.id !== oldCoverPhoto?.id,
+      );
+      const updatedPhotos = uploadedPhoto
+        ? [...retainedPhotos, uploadedPhoto]
+        : retainedPhotos;
+
     const updatedRecipe: Recipe = {
       id: baseRecipe.id,
       title: title.trim(),
@@ -338,17 +372,62 @@ function removeTag(tagToRemove: string) {
               url: sourceUrl.trim() || undefined,
             }
           : undefined,
-      photos: baseRecipe.photos,
-      coverPhotoId: baseRecipe.coverPhotoId,
+      photos: updatedPhotos.length > 0 ? updatedPhotos : undefined,
+      coverPhotoId: uploadedPhoto
+        ? uploadedPhoto.id
+        : removeExistingCover
+          ? undefined
+          : baseRecipe.coverPhotoId,
       preparations: baseRecipe.preparations,
     };
 
-    onUpdate(updatedRecipe);
+      operation = "save";
+      const didSave = await onUpdate(updatedRecipe);
+
+      if (!didSave) {
+        throw new Error("Recipe update failed");
+      }
+
+      if (shouldRemoveOldCover && !oldCoverIsPreparationPhoto && oldCoverPhoto) {
+        try {
+          await removeRecipePhotos([oldCoverPhoto.storagePath]);
+        } catch (cleanupError) {
+          console.error(
+            "Errore nella rimozione della precedente foto di copertina:",
+            cleanupError,
+          );
+        }
+      }
+
     setIsLeaving(true);
 
     setTimeout(() => {
       navigate(`/recipes/${baseRecipe.id}`);
     }, 550);
+
+    } catch (error) {
+      if (uploadedPhoto) {
+        try {
+          await removeRecipePhotos([uploadedPhoto.storagePath]);
+        } catch (cleanupError) {
+          console.error(
+            "Errore nella rimozione della nuova foto dopo il salvataggio fallito:",
+            cleanupError,
+          );
+        }
+      }
+
+      console.error("Errore nella modifica della ricetta:", error);
+      setSaveError(
+        operation === "compression"
+          ? "Non è stato possibile leggere o elaborare la foto. Scegli un file JPEG, PNG o WebP valido e riprova."
+          : operation === "upload"
+            ? "Non è stato possibile caricare la foto. Controlla la connessione e riprova."
+            : "Non è stato possibile salvare la ricetta. I dati del form sono ancora qui: riprova.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
 
     return;
   }
@@ -678,6 +757,77 @@ setTimeout(() => {
     </button>
   </div>
 </section>  
+
+{isEditing && baseRecipe && (
+  <section className="new-recipe-page__photo new-recipe-page__photo--edit">
+    <p className="new-recipe-page__label">Foto di copertina</p>
+
+    <p className="new-recipe-page__photo-note">
+      {photoFile
+        ? `Nuova foto selezionata: ${photoFile.name}`
+        : baseRecipe.coverPhotoId && !removeExistingCover
+          ? "Una foto di copertina è presente."
+          : removeExistingCover
+            ? "La foto di copertina verrà rimossa al salvataggio."
+            : "Nessuna foto di copertina."}
+    </p>
+
+    <input
+      key={photoInputKey}
+      id="recipe-cover-photo-edit"
+      className="new-recipe-page__photo-input new-recipe-page__photo-input--hidden"
+      type="file"
+      accept="image/jpeg,image/png,image/webp"
+      disabled={isSubmitting || isLeaving}
+      onChange={(event) => {
+        setPhotoFile(event.target.files?.[0]);
+        setRemoveExistingCover(false);
+        setSaveError(undefined);
+      }}
+    />
+
+    <div className="new-recipe-page__photo-actions">
+      <label
+        className="new-recipe-page__photo-action"
+        htmlFor="recipe-cover-photo-edit"
+        aria-disabled={isSubmitting || isLeaving}
+      >
+        {baseRecipe.coverPhotoId && !removeExistingCover
+          ? "Sostituisci foto"
+          : "Aggiungi foto"}
+      </label>
+
+      {photoFile && (
+        <button
+          type="button"
+          disabled={isSubmitting || isLeaving}
+          onClick={() => {
+            setPhotoFile(undefined);
+            setPhotoInputKey((currentKey) => currentKey + 1);
+          }}
+        >
+          Annulla selezione
+        </button>
+      )}
+
+      {baseRecipe.coverPhotoId && !removeExistingCover && (
+        <button
+          type="button"
+          className="new-recipe-page__photo-remove-action"
+          disabled={isSubmitting || isLeaving}
+          onClick={() => {
+            setPhotoFile(undefined);
+            setPhotoInputKey((currentKey) => currentKey + 1);
+            setRemoveExistingCover(true);
+            setSaveError(undefined);
+          }}
+        >
+          Rimuovi foto
+        </button>
+      )}
+    </div>
+  </section>
+)}
 
 {!isEditing && (
   <section className="new-recipe-page__photo">

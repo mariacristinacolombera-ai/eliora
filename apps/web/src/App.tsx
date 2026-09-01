@@ -85,21 +85,25 @@ export default function App() {
 }
 
 async function updateRecipe(updatedRecipe: Recipe) {
-  setRecipes((currentRecipes) =>
-    currentRecipes.map((recipe) =>
-      recipe.id === updatedRecipe.id
-        ? updatedRecipe
-        : recipe,
-    ),
-  );
-
   try {
     await saveRecipeToSupabase(updatedRecipe);
+
+    setRecipes((currentRecipes) =>
+      currentRecipes.map((recipe) =>
+        recipe.id === updatedRecipe.id
+          ? updatedRecipe
+          : recipe,
+      ),
+    );
+
+    return true;
   } catch (error) {
     console.error(
       "Errore nell'aggiornamento della ricetta su Supabase:",
       error,
     );
+
+    return false;
   }
 }
 

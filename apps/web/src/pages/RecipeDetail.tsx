@@ -3,7 +3,7 @@ import type {
   Recipe,
   RecipePreparation,
 } from "../domain/Recipe";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   parseQuantity,
   scaleIngredients,
@@ -16,6 +16,7 @@ import {
   Trash2,
   Repeat2,
 } from "lucide-react";
+import { createRecipePhotoSignedUrls } from "../lib/recipePhotosRepository";
 
 type RecipeDetailProps = {
   recipes: Recipe[];
@@ -46,6 +47,10 @@ export default function RecipeDetail({
   "liked" | "neutral" | "disliked" | ""
   >("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [photoUrls, setPhotoUrls] = useState<{
+    recipeId: string;
+    byPhotoId: Record<string, string>;
+  } | null>(null);
   const [deleteVariantsToo, setDeleteVariantsToo] = useState(false);
   const [scaledServings, setScaledServings] =
   useState<string | null>(null);
@@ -62,6 +67,57 @@ const [
   const recipe = recipes.find(
     (item) => item.id === recipeId,
   );
+
+  const currentRecipeId = recipe?.id;
+  const requestedPhotos = useMemo(() => {
+    if (!recipe) {
+      return [];
+    }
+
+    const requestedPhotoIds = new Set([
+      recipe.coverPhotoId,
+      ...recipe.preparations.map((preparation) => preparation.photoId),
+    ]);
+
+    return (recipe.photos ?? []).filter((photo) =>
+      requestedPhotoIds.has(photo.id),
+    );
+  }, [recipe]);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    setPhotoUrls(null);
+
+    if (!currentRecipeId || requestedPhotos.length === 0) {
+      return () => {
+        isCurrent = false;
+      };
+    }
+
+    const storagePaths = requestedPhotos.map((photo) => photo.storagePath);
+
+    createRecipePhotoSignedUrls(storagePaths)
+      .then((signedUrls) => {
+        const byPhotoId = Object.fromEntries(
+          requestedPhotos.flatMap((photo) => {
+            const url = signedUrls[photo.storagePath];
+            return url ? [[photo.id, url]] : [];
+          }),
+        );
+
+        if (isCurrent) {
+          setPhotoUrls({ recipeId: currentRecipeId, byPhotoId });
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load recipe photos", error);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [currentRecipeId, requestedPhotos]);
 
   if (isLoading) {
   return (
@@ -190,6 +246,46 @@ function formatOutcome(
     case "disliked":
       return "Non mi è piaciuta";
   }
+}
+
+function renderPreparationPhoto(preparation: RecipePreparation) {
+  if (
+    !preparation.photoId ||
+    preparation.photoId === currentRecipe.coverPhotoId ||
+    photoUrls?.recipeId !== currentRecipe.id
+  ) {
+    return null;
+  }
+
+  const url = photoUrls.byPhotoId[preparation.photoId];
+
+  if (!url) {
+    return null;
+  }
+
+  return (
+    <figure className="recipe-detail__preparation-photo">
+      <img
+        src={url}
+        alt={`Foto della preparazione di ${currentRecipe.title} del ${formatPreparationDate(preparation.preparedAt)}`}
+        onError={() => {
+          setPhotoUrls((currentPhotoUrls) => {
+            if (
+              !currentPhotoUrls ||
+              currentPhotoUrls.recipeId !== currentRecipe.id
+            ) {
+              return currentPhotoUrls;
+            }
+
+            const byPhotoId = { ...currentPhotoUrls.byPhotoId };
+            delete byPhotoId[preparation.photoId!];
+
+            return { ...currentPhotoUrls, byPhotoId };
+          });
+        }}
+      />
+    </figure>
+  );
 }
 
 function hasUniquePreparationId(preparationId: string) {
@@ -459,7 +555,15 @@ function resetScaling() {
 
   return (
     <main className="recipe-detail surface-paper">
-      <header className="recipe-detail__header">
+      <header
+        className={`recipe-detail__header${
+          photoUrls?.recipeId === recipe.id &&
+          recipe.coverPhotoId &&
+          photoUrls.byPhotoId[recipe.coverPhotoId]
+            ? " recipe-detail__header--with-cover"
+            : ""
+        }`}
+      >
         <button
           type="button"
           className="recipe-detail__back"
@@ -471,6 +575,32 @@ function resetScaling() {
         <h1 className="recipe-detail__title">
           {recipe.title}
         </h1>
+
+        {photoUrls?.recipeId === recipe.id &&
+          recipe.coverPhotoId &&
+          photoUrls.byPhotoId[recipe.coverPhotoId] && (
+          <figure className="recipe-detail__cover-photo">
+            <img
+              src={photoUrls.byPhotoId[recipe.coverPhotoId]}
+              alt={`Foto di copertina di ${recipe.title}`}
+              onError={() => {
+                setPhotoUrls((currentPhotoUrls) => {
+                  if (
+                    !currentPhotoUrls ||
+                    currentPhotoUrls.recipeId !== recipe.id
+                  ) {
+                    return currentPhotoUrls;
+                  }
+
+                  const byPhotoId = { ...currentPhotoUrls.byPhotoId };
+                  delete byPhotoId[recipe.coverPhotoId!];
+
+                  return { ...currentPhotoUrls, byPhotoId };
+                });
+              }}
+            />
+          </figure>
+        )}
 
         <div className="recipe-detail__meta">
   <div className="recipe-detail__recipe-tags">
@@ -961,7 +1091,10 @@ onBlur={() => {
         </section>
       )}
 
-      {(lastPreparation?.memory || recipe.memory) && (
+      {(lastPreparation?.memory ||
+        recipe.memory ||
+        (lastPreparation?.photoId &&
+          lastPreparation.photoId !== recipe.coverPhotoId)) && (
   <section className="recipe-detail__memory surface-paper-soft">
     <div className="recipe-detail__memory-heading">
       <p className="recipe-detail__memory-label">
@@ -971,15 +1104,23 @@ onBlur={() => {
       {lastPreparation?.memory && renderMemoryActions(lastPreparation)}
     </div>
 
-    {lastPreparation?.memory &&
-    (editingMemoryId === lastPreparation.id ||
-      deletingMemoryId === lastPreparation.id) ? (
-      renderEditableMemory(lastPreparation)
-    ) : (
-      <p className="recipe-detail__memory-text">
-        {lastPreparation?.memory || recipe.memory}
-      </p>
-    )}
+    <div className="recipe-detail__preparation-content">
+      <div className="recipe-detail__preparation-copy">
+        {lastPreparation?.memory &&
+        (editingMemoryId === lastPreparation.id ||
+          deletingMemoryId === lastPreparation.id) ? (
+          renderEditableMemory(lastPreparation)
+        ) : (
+          (lastPreparation?.memory || recipe.memory) && (
+            <p className="recipe-detail__memory-text">
+              {lastPreparation?.memory || recipe.memory}
+            </p>
+          )
+        )}
+      </div>
+
+      {lastPreparation && renderPreparationPhoto(lastPreparation)}
+    </div>
   </section>
 )}
 
@@ -1010,32 +1151,38 @@ onBlur={() => {
             key={preparation.id}
             className="recipe-detail__history-item"
           >
-            <span className="recipe-detail__history-date">
-              {formatPreparationDate(preparation.preparedAt)}
-            </span>
+            <div className="recipe-detail__preparation-content">
+              <div className="recipe-detail__preparation-copy">
+                <span className="recipe-detail__history-date">
+                  {formatPreparationDate(preparation.preparedAt)}
+                </span>
 
-            {preparation.outcome && (
-  <span className="recipe-detail__history-outcome">
-    {formatOutcome(preparation.outcome)}
-  </span>
-)}
-
-            {preparation.memory && (
-              <>
-                {editingMemoryId === preparation.id ||
-                deletingMemoryId === preparation.id ? (
-                  renderEditableMemory(preparation)
-                ) : (
-                  <div className="recipe-detail__history-memory-row">
-                    <p className="recipe-detail__history-memory">
-                      {preparation.memory}
-                    </p>
-
-                    {renderMemoryActions(preparation)}
-                  </div>
+                {preparation.outcome && (
+                  <span className="recipe-detail__history-outcome">
+                    {formatOutcome(preparation.outcome)}
+                  </span>
                 )}
-              </>
-            )}
+
+                {preparation.memory && (
+                  <>
+                    {editingMemoryId === preparation.id ||
+                    deletingMemoryId === preparation.id ? (
+                      renderEditableMemory(preparation)
+                    ) : (
+                      <div className="recipe-detail__history-memory-row">
+                        <p className="recipe-detail__history-memory">
+                          {preparation.memory}
+                        </p>
+
+                        {renderMemoryActions(preparation)}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {renderPreparationPhoto(preparation)}
+            </div>
           </div>
         ))}
     </div>
