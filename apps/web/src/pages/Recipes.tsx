@@ -2,13 +2,14 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import RecipeHeroCard from "../features/recipes/components/RecipeHeroCard";
 import "./Recipes.css";
 import RecipeSearch from "../features/recipes/components/RecipeSearch";
 import RecipeCard from "../features/recipes/components/RecipeCard";
 import type { Recipe } from "../domain/Recipe";
 import { getLatestPreparation } from "../lib/recipePreparations";
+import { createRecipePhotoSignedUrls } from "../lib/recipePhotosRepository";
 
 type RecipesProps = {
   recipes: Recipe[];
@@ -35,12 +36,15 @@ const [showAddedMessage, setShowAddedMessage] =
   useState(false);
 
 const [searchQuery, setSearchQuery] = useState("");
+const [coverUrlsByRecipeId, setCoverUrlsByRecipeId] = useState<
+  Record<string, string>
+>({});
 
 const normalizedSearch = searchQuery
   .trim()
   .toLowerCase();
 
-const filteredRecipes = recipes.filter((recipe) => {
+const filteredRecipes = useMemo(() => recipes.filter((recipe) => {
   const matchesTitle = recipe.title
     .toLowerCase()
     .includes(normalizedSearch);
@@ -58,7 +62,60 @@ const filteredRecipes = recipes.filter((recipe) => {
     matchesCategory ||
     matchesTags
   );
-});
+}), [normalizedSearch, recipes]);
+
+const visibleCoverPhotos = useMemo(
+  () =>
+    filteredRecipes.flatMap((recipe) => {
+      if (!recipe.coverPhotoId) {
+        return [];
+      }
+
+      const coverPhoto = (recipe.photos ?? []).find(
+        (photo) => photo.id === recipe.coverPhotoId,
+      );
+
+      return coverPhoto ? [{ recipeId: recipe.id, photo: coverPhoto }] : [];
+    }),
+  [filteredRecipes],
+);
+
+useEffect(() => {
+  let isCurrent = true;
+
+  setCoverUrlsByRecipeId({});
+
+  if (visibleCoverPhotos.length === 0) {
+    return () => {
+      isCurrent = false;
+    };
+  }
+
+  createRecipePhotoSignedUrls(
+    visibleCoverPhotos.map(({ photo }) => photo.storagePath),
+  )
+    .then((signedUrls) => {
+      if (!isCurrent) {
+        return;
+      }
+
+      setCoverUrlsByRecipeId(
+        Object.fromEntries(
+          visibleCoverPhotos.flatMap(({ recipeId, photo }) => {
+            const url = signedUrls[photo.storagePath];
+            return url ? [[recipeId, url]] : [];
+          }),
+        ),
+      );
+    })
+    .catch((error: unknown) => {
+      console.error("Failed to load recipe card cover photos", error);
+    });
+
+  return () => {
+    isCurrent = false;
+  };
+}, [visibleCoverPhotos]);
 
   useEffect(() => {
   if (!createdRecipeId) {
@@ -232,6 +289,7 @@ const latestPreparedRecipe = latestPreparation
   recipe={recipe}
   recipes={recipes}
   isNew={recipe.id === recentlyCreatedId}
+  coverImageUrl={coverUrlsByRecipeId[recipe.id]}
 />
 ))}
       </section>
