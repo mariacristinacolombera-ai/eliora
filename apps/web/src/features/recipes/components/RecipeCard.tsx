@@ -1,6 +1,7 @@
 import type { Recipe } from "../../../domain/Recipe";
 import { useNavigate } from "react-router-dom";
 import "./RecipeCard.css";
+import { getLatestPreparation } from "../../../lib/recipePreparations";
 
 type RecipeCardProps = {
   recipe: Recipe;
@@ -16,10 +17,7 @@ export default function RecipeCard({
  {
   const navigate = useNavigate();
 
-  const lastPreparation =
-  recipe.preparations.length > 0
-    ? recipe.preparations[recipe.preparations.length - 1]
-    : undefined;
+  const lastPreparation = getLatestPreparation(recipe.preparations);
 
 const displayedMemory =
   lastPreparation?.memory || recipe.memory;

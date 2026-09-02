@@ -14,6 +14,7 @@ import "./NewRecipe.css";
 import type {
   Ingredient,
   Recipe,
+  RecipePreparation,
   RecipeStatus,
   RecipeStep,
 } from "../domain/Recipe";
@@ -32,6 +33,20 @@ const recipeCategories = [
   { id: "merenda", label: "Merenda", icon: "🍪" },
   { id: "pane", label: "Pane", icon: "🍞" },
 ];
+
+function formatDateInputValue(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function dateInputToPreparedAt(value: string): string {
+  const [year, month, day] = value.split("-").map(Number);
+
+  return new Date(year, month - 1, day, 12).toISOString();
+}
 
 type NewRecipeProps = {
   onSave: (recipe: Recipe) => Promise<void>;
@@ -167,6 +182,10 @@ const [restOvernight, setRestOvernight] = useState(
 const [status, setStatus] = useState<RecipeStatus>(
   baseRecipe?.status ?? "saved",
 );
+const [firstPreparationDate, setFirstPreparationDate] = useState("");
+const [firstPreparationOutcome, setFirstPreparationOutcome] = useState<
+  RecipePreparation["outcome"] | ""
+>("");
 const [photoFile, setPhotoFile] = useState<File>();
 const [photoInputKey, setPhotoInputKey] = useState(0);
 const [removeExistingCover, setRemoveExistingCover] = useState(false);
@@ -291,7 +310,13 @@ function removeTag(tagToRemove: string) {
 }
 
   async function handleSave() {
-  if (!title.trim() || !category || isLeaving || isSubmitting) {
+  if (
+    !title.trim() ||
+    !category ||
+    (!isEditing && status === "tried" && !firstPreparationDate) ||
+    isLeaving ||
+    isSubmitting
+  ) {
     return;
   }
 
@@ -308,7 +333,7 @@ function removeTag(tagToRemove: string) {
     const oldCoverPhoto = baseRecipe.photos?.find(
       (photo) => photo.id === baseRecipe.coverPhotoId,
     );
-    const oldCoverIsPreparationPhoto = baseRecipe.preparations.some(
+    const oldCoverIsPreparationPhoto = (baseRecipe.preparations ?? []).some(
       (preparation) => preparation.photoId === baseRecipe.coverPhotoId,
     );
 
@@ -378,7 +403,7 @@ function removeTag(tagToRemove: string) {
         : removeExistingCover
           ? undefined
           : baseRecipe.coverPhotoId,
-      preparations: baseRecipe.preparations,
+      preparations: baseRecipe.preparations ?? [],
     };
 
       operation = "save";
@@ -508,7 +533,8 @@ function removeTag(tagToRemove: string) {
           id: `${Date.now()}-${Math.random()
             .toString(36)
             .slice(2)}`,
-          preparedAt: new Date().toISOString(),
+          preparedAt: dateInputToPreparedAt(firstPreparationDate),
+          outcome: firstPreparationOutcome || undefined,
           memory: memory.trim() || undefined,
           photoId: uploadedPhoto?.id,
         },
@@ -757,6 +783,63 @@ setTimeout(() => {
     </button>
   </div>
 </section>  
+
+{!isEditing && status === "tried" && (
+  <section className="new-recipe-page__first-preparation">
+    <div className="new-recipe-page__first-preparation-date">
+      <label
+        className="new-recipe-page__label"
+        htmlFor="first-preparation-date"
+      >
+        Data della preparazione
+      </label>
+
+      <div className="new-recipe-page__date-row">
+        <input
+          id="first-preparation-date"
+          className="new-recipe-page__input"
+          type="date"
+          required
+          value={firstPreparationDate}
+          onChange={(event) => setFirstPreparationDate(event.target.value)}
+        />
+        <button
+          type="button"
+          className="new-recipe-page__today-button eliora-button--secondary"
+          onClick={() => setFirstPreparationDate(formatDateInputValue(new Date()))}
+        >
+          Oggi
+        </button>
+      </div>
+    </div>
+
+    <div className="new-recipe-page__outcome">
+      <p className="new-recipe-page__outcome-label">
+        Esito della preparazione
+      </p>
+      <div className="new-recipe-page__outcome-options">
+        {([
+          ["liked", "Mi è piaciuta"],
+          ["neutral", "Così così"],
+          ["disliked", "Non mi è piaciuta"],
+        ] as const).map(([outcome, label]) => (
+          <button
+            key={outcome}
+            type="button"
+            className={`new-recipe-page__outcome-option ${
+              firstPreparationOutcome === outcome
+                ? "new-recipe-page__outcome-option--selected"
+                : ""
+            }`}
+            onClick={() => setFirstPreparationOutcome(outcome)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
 
 {isEditing && baseRecipe && (
   <section className="new-recipe-page__photo new-recipe-page__photo--edit">
@@ -1271,7 +1354,13 @@ setTimeout(() => {
       <button
         className="new-recipe-page__continue eliora-button--primary"
         type="button"
-        disabled={!title.trim() || !category || isLeaving || isSubmitting}
+        disabled={
+          !title.trim() ||
+          !category ||
+          (!isEditing && status === "tried" && !firstPreparationDate) ||
+          isLeaving ||
+          isSubmitting
+        }
         onClick={handleSave}
       >
         {isSubmitting ? "Salvataggio..." : "Salva ricetta"}

@@ -8,6 +8,7 @@ import "./Recipes.css";
 import RecipeSearch from "../features/recipes/components/RecipeSearch";
 import RecipeCard from "../features/recipes/components/RecipeCard";
 import type { Recipe } from "../domain/Recipe";
+import { getLatestPreparation } from "../lib/recipePreparations";
 
 type RecipesProps = {
   recipes: Recipe[];
@@ -107,18 +108,14 @@ const cleanNavigationTimer = setTimeout(() => {
 }, []);
   
 
-const latestPreparedRecipe = recipes
-  .flatMap((recipe) =>
-    recipe.preparations.map((preparation) => ({
-      recipe,
-      preparation,
-    })),
-  )
-  .sort(
-    (a, b) =>
-      new Date(b.preparation.preparedAt).getTime() -
-      new Date(a.preparation.preparedAt).getTime(),
-  )[0];
+const latestPreparation = getLatestPreparation(
+  recipes.flatMap((recipe) => recipe.preparations ?? []),
+);
+const latestPreparedRecipe = latestPreparation
+  ? recipes.find((recipe) =>
+      (recipe.preparations ?? []).includes(latestPreparation),
+    )
+  : undefined;
 
   return (
   <>
@@ -160,26 +157,26 @@ const latestPreparedRecipe = recipes
         </p>
       </header>
 
-     {latestPreparedRecipe && (
+     {latestPreparedRecipe && latestPreparation && (
   <RecipeHeroCard
-    id={latestPreparedRecipe.recipe.id}
-    title={latestPreparedRecipe.recipe.title}
+    id={latestPreparedRecipe.id}
+    title={latestPreparedRecipe.title}
     preparedAt={
       new Date(
-        latestPreparedRecipe.preparation.preparedAt,
+        latestPreparation.preparedAt,
       )
     }
     memory={
-      latestPreparedRecipe.preparation.memory
+      latestPreparation.memory
     }
     onRemember={(memory) => {
       const updatedRecipe = {
-        ...latestPreparedRecipe.recipe,
+        ...latestPreparedRecipe,
         preparations:
-          latestPreparedRecipe.recipe.preparations.map(
+          latestPreparedRecipe.preparations.map(
             (preparation) =>
               preparation.id ===
-              latestPreparedRecipe.preparation.id
+              latestPreparation.id
                 ? {
                     ...preparation,
                     memory,

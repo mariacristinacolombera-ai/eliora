@@ -17,6 +17,10 @@ import {
   Repeat2,
 } from "lucide-react";
 import { createRecipePhotoSignedUrls } from "../lib/recipePhotosRepository";
+import {
+  getLatestPreparation,
+  getPreparationsByRecency,
+} from "../lib/recipePreparations";
 
 type RecipeDetailProps = {
   recipes: Recipe[];
@@ -76,7 +80,7 @@ const [
 
     const requestedPhotoIds = new Set([
       recipe.coverPhotoId,
-      ...recipe.preparations.map((preparation) => preparation.photoId),
+      ...(recipe.preparations ?? []).map((preparation) => preparation.photoId),
     ]);
 
     return (recipe.photos ?? []).filter((photo) =>
@@ -198,10 +202,8 @@ const displayedIngredients = scaleIngredients(
 
   
 
-  const lastPreparation =
-  recipe.preparations.length > 0
-    ? recipe.preparations[recipe.preparations.length - 1]
-    : undefined;
+  const preparationsByRecency = getPreparationsByRecency(recipe.preparations);
+  const lastPreparation = getLatestPreparation(recipe.preparations);
 
     const parentRecipe = recipe.parentRecipeId
   ? recipes.find(
@@ -216,6 +218,10 @@ const displayedIngredients = scaleIngredients(
   function formatPreparationDate(date: string) {
   const preparationDate = new Date(date);
   const today = new Date();
+
+  if (!Number.isFinite(preparationDate.getTime())) {
+    return "Data non disponibile";
+  }
 
   const isToday =
     preparationDate.getDate() === today.getDate() &&
@@ -291,7 +297,7 @@ function renderPreparationPhoto(preparation: RecipePreparation) {
 function hasUniquePreparationId(preparationId: string) {
   return (
     Boolean(preparationId) &&
-    currentRecipe.preparations.filter(
+    (currentRecipe.preparations ?? []).filter(
       (preparation) => preparation.id === preparationId,
     ).length === 1
   );
@@ -322,7 +328,7 @@ function saveEditedMemory(preparationId: string) {
 
   onUpdate({
     ...currentRecipe,
-    preparations: currentRecipe.preparations.map((preparation) =>
+    preparations: (currentRecipe.preparations ?? []).map((preparation) =>
       preparation.id === preparationId
         ? {
             ...preparation,
@@ -352,7 +358,7 @@ function confirmDeleteMemory(preparationId: string) {
 
   onUpdate({
     ...currentRecipe,
-    preparations: currentRecipe.preparations.map((preparation) => {
+    preparations: (currentRecipe.preparations ?? []).map((preparation) => {
       if (preparation.id !== preparationId) {
         return preparation;
       }
@@ -517,7 +523,7 @@ function confirmTriedWithoutMemory(recipeToUpdate: Recipe) {
     ...recipeToUpdate,
     status: "tried",
     preparations: [
-      ...recipeToUpdate.preparations,
+      ...(recipeToUpdate.preparations ?? []),
       preparation,
     ],
   });
@@ -537,7 +543,7 @@ function confirmTriedWithMemory(recipeToUpdate: Recipe) {
     ...recipeToUpdate,
     status: "tried",
     preparations: [
-      ...recipeToUpdate.preparations,
+      ...(recipeToUpdate.preparations ?? []),
       preparation,
     ],
   });
@@ -1124,7 +1130,7 @@ onBlur={() => {
   </section>
 )}
 
-{(recipe.preparations.length > 1 || recipe.memory) && (
+{(preparationsByRecency.length > 1 || recipe.memory) && (
   <section className="recipe-detail__history">
     <h2 className="recipe-detail__history-title">
       Preparazioni precedenti
@@ -1143,9 +1149,8 @@ onBlur={() => {
     </p>
   </div>
 )}
-      {[...recipe.preparations]
-  .slice(0, -1)
-  .reverse()
+      {preparationsByRecency
+  .filter((preparation) => preparation !== lastPreparation)
   .map((preparation) => (
           <div
             key={preparation.id}
