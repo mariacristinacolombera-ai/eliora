@@ -9,6 +9,75 @@
   box-shadow: var(--shadow-paper);
 }
 
+.recipe-hero--with-photo {
+  display: block;
+}
+
+.recipe-hero__content {
+  min-width: 0;
+}
+
+.recipe-hero__photo {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  width: 168px;
+  margin: 1.25rem auto 0;
+  padding: 6px;
+  border-radius: 2px;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(205, 159, 91, 0.22) 0 6px, transparent 17px),
+    radial-gradient(circle at 92% 86%, rgba(188, 139, 75, 0.16) 0 8px, transparent 21px),
+    linear-gradient(105deg, rgba(255, 255, 255, 0.18), transparent 38%),
+    linear-gradient(0deg, rgba(205, 159, 91, 0.13), transparent 24%),
+    rgba(255, 250, 238, 0.96);
+  box-shadow:
+    0 12px 24px rgba(70, 57, 40, 0.12),
+    0 3px 7px rgba(70, 57, 40, 0.08);
+  transform: rotate(-1.6deg);
+}
+
+.recipe-hero__photo::before,
+.recipe-hero__photo::after {
+  position: absolute;
+  z-index: 2;
+  width: 62px;
+  height: 20px;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12), transparent 28% 72%, rgba(156, 112, 65, 0.08)),
+    rgba(232, 191, 123, 0.62);
+  box-shadow: 0 1px 3px rgba(70, 57, 40, 0.1);
+  content: "";
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.recipe-hero__photo::before {
+  top: -6px;
+  left: -10px;
+  clip-path: polygon(2% 8%, 98% 0, 96% 92%, 0 100%);
+  transform: rotate(-11deg);
+}
+
+.recipe-hero__photo::after {
+  right: -9px;
+  bottom: -3px;
+  clip-path: polygon(0 4%, 100% 10%, 97% 100%, 3% 92%);
+  transform: rotate(-8deg);
+}
+
+.recipe-hero__photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 1px;
+  object-fit: cover;
+}
+
+.recipe-hero__photo + .recipe-hero__memory {
+  margin-top: 0.9rem;
+}
+
 .recipe-hero__eyebrow {
   margin: 0;
 
@@ -125,4 +194,26 @@
 
   color: var(--color-muted);
   opacity: 0.75;
+}
+
+@media (max-width: 560px) {
+  .recipe-hero__photo {
+    width: min(100%, 18rem);
+  }
+
+  .recipe-hero__photo::before,
+  .recipe-hero__photo::after {
+    width: 56px;
+    height: 19px;
+  }
+
+  .recipe-hero__photo::before {
+    top: -4px;
+    left: -6px;
+  }
+
+  .recipe-hero__photo::after {
+    right: -6px;
+    bottom: -2px;
+  }
 }

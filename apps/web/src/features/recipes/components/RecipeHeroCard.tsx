@@ -7,6 +7,7 @@ type RecipeHeroCardProps = {
   title: string;
   preparedAt: Date;
   memory?: string;
+  preparationImageUrl?: string;
   onRemember: (memory: string) => void;
 };
 
@@ -15,10 +16,16 @@ export default function RecipeHeroCard({
   title,
   preparedAt,
   memory,
+  preparationImageUrl,
   onRemember,
 }: RecipeHeroCardProps) {
   const [showRemember, setShowRemember] = useState(false);
 const [newMemory, setNewMemory] = useState(memory ?? "");
+  const [failedImageUrl, setFailedImageUrl] = useState<string>();
+  const displayedImageUrl =
+    preparationImageUrl && preparationImageUrl !== failedImageUrl
+      ? preparationImageUrl
+      : undefined;
   const formattedDate = preparedAt.toLocaleDateString("it-IT", {
     day: "numeric",
     month: "long",
@@ -28,7 +35,12 @@ const [newMemory, setNewMemory] = useState(memory ?? "");
   const navigate = useNavigate();
 
   return (
-    <article className="recipe-hero surface-paper-soft">
+    <article
+      className={`recipe-hero surface-paper-soft${
+        displayedImageUrl ? " recipe-hero--with-photo" : ""
+      }`}
+    >
+      <div className="recipe-hero__content">
       <p className="recipe-hero__eyebrow">L’ultima volta</p>
 
       <h2 className="recipe-hero__title">{title}</h2>
@@ -36,6 +48,16 @@ const [newMemory, setNewMemory] = useState(memory ?? "");
       <p className="recipe-hero__date">
         Preparata il {formattedDate}
       </p>
+
+      {displayedImageUrl && (
+        <figure className="recipe-hero__photo">
+          <img
+            src={displayedImageUrl}
+            alt={`Foto dell’ultima preparazione di ${title}`}
+            onError={() => setFailedImageUrl(displayedImageUrl)}
+          />
+        </figure>
+      )}
 
       {memory && (
   <p className="recipe-hero__memory">
@@ -99,6 +121,7 @@ const [newMemory, setNewMemory] = useState(memory ?? "");
     </div>
   </div>
 )}
+      </div>
     </article>
   );
 }

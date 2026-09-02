@@ -887,6 +887,74 @@ gap: 0.4rem;
   color: var(--color-primary);
 }
 
+.recipe-detail__preparation-photo-field {
+  margin-bottom: 0.9rem;
+}
+
+.recipe-detail__preparation-photo-label {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.recipe-detail__preparation-photo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.recipe-detail__preparation-photo-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.recipe-detail__preparation-photo-action,
+.recipe-detail__preparation-photo-actions button {
+  flex-shrink: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(117, 101, 78, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.recipe-detail__preparation-photo-name {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipe-detail__preparation-photo-action[aria-disabled="true"],
+.recipe-detail__preparation-photo-actions button:disabled {
+  cursor: default;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.recipe-detail__preparation-save-error {
+  margin: 0.65rem 0 0;
+  color: var(--color-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-small);
+  line-height: 1.45;
+}
+
 .recipe-detail__memory-prompt-input {
   width: 100%;
   min-height: 6rem;

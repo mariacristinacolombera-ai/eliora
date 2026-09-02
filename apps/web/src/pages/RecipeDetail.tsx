@@ -16,7 +16,12 @@ import {
   Trash2,
   Repeat2,
 } from "lucide-react";
-import { createRecipePhotoSignedUrls } from "../lib/recipePhotosRepository";
+import {
+  createRecipePhotoSignedUrls,
+  removeRecipePhotos,
+  uploadRecipePhoto,
+} from "../lib/recipePhotosRepository";
+import { compressRecipePhoto } from "../lib/imageCompression";
 import {
   getLatestPreparation,
   getPreparationsByRecency,
@@ -24,7 +29,7 @@ import {
 
 type RecipeDetailProps = {
   recipes: Recipe[];
-  onUpdate: (recipe: Recipe) => void;
+  onUpdate: (recipe: Recipe) => Promise<boolean>;
   onDelete: (recipeId: string) => void;
   isLoading: boolean;
 };
@@ -50,6 +55,12 @@ export default function RecipeDetail({
   const [newOutcome, setNewOutcome] = useState<
   "liked" | "neutral" | "disliked" | ""
   >("");
+  const [newPreparationPhotoFile, setNewPreparationPhotoFile] =
+    useState<File>();
+  const [newPreparationPhotoInputKey, setNewPreparationPhotoInputKey] =
+    useState(0);
+  const [isSavingPreparation, setIsSavingPreparation] = useState(false);
+  const [preparationSaveError, setPreparationSaveError] = useState<string>();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [photoUrls, setPhotoUrls] = useState<{
     recipeId: string;
@@ -489,6 +500,7 @@ function renderEditableMemory(preparation: RecipePreparation) {
 }
 
   function markAsTried() {
+  setPreparationSaveError(undefined);
   setShowMemoryPrompt(true);
 }
 
@@ -512,45 +524,85 @@ function confirmDelete(recipeToDelete: Recipe) {
   navigate("/recipes");
 }
 
-function confirmTriedWithoutMemory(recipeToUpdate: Recipe) {
-  const preparation = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    preparedAt: new Date().toISOString(),
-    outcome: newOutcome || undefined,
-  };
+async function confirmTried(
+  recipeToUpdate: Recipe,
+  includeMemory: boolean,
+) {
+  if (isSavingPreparation) {
+    return;
+  }
 
-  onUpdate({
-    ...recipeToUpdate,
-    status: "tried",
-    preparations: [
-      ...(recipeToUpdate.preparations ?? []),
-      preparation,
-    ],
-  });
+  setIsSavingPreparation(true);
+  setPreparationSaveError(undefined);
 
-  setShowMemoryPrompt(false);
-}
+  let uploadedPhoto: Awaited<ReturnType<typeof uploadRecipePhoto>> | undefined;
+  let operation: "compression" | "upload" | "save" = "compression";
 
-function confirmTriedWithMemory(recipeToUpdate: Recipe) {
-  const preparation = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    preparedAt: new Date().toISOString(),
-    outcome: newOutcome || undefined,
-    memory: newMemory.trim() || undefined,
-  };
+  try {
+    if (newPreparationPhotoFile) {
+      const compressedPhoto = await compressRecipePhoto(
+        newPreparationPhotoFile,
+      );
+      operation = "upload";
+      uploadedPhoto = await uploadRecipePhoto({
+        recipeId: recipeToUpdate.id,
+        file: compressedPhoto,
+      });
+    }
 
-  onUpdate({
-    ...recipeToUpdate,
-    status: "tried",
-    preparations: [
-      ...(recipeToUpdate.preparations ?? []),
-      preparation,
-    ],
-  });
+    const preparation: RecipePreparation = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      preparedAt: new Date().toISOString(),
+      outcome: newOutcome || undefined,
+      memory: includeMemory ? newMemory.trim() || undefined : undefined,
+      photoId: uploadedPhoto?.id,
+    };
 
-  setShowMemoryPrompt(false);
-  setNewMemory("");
-  setNewOutcome("");
+    operation = "save";
+    const didSave = await onUpdate({
+      ...recipeToUpdate,
+      status: "tried",
+      photos: uploadedPhoto
+        ? [...(recipeToUpdate.photos ?? []), uploadedPhoto]
+        : recipeToUpdate.photos,
+      preparations: [
+        ...(recipeToUpdate.preparations ?? []),
+        preparation,
+      ],
+    });
+
+    if (!didSave) {
+      throw new Error("Recipe update failed");
+    }
+
+    setShowMemoryPrompt(false);
+    setNewMemory("");
+    setNewOutcome("");
+    setNewPreparationPhotoFile(undefined);
+    setNewPreparationPhotoInputKey((currentKey) => currentKey + 1);
+  } catch (error) {
+    if (uploadedPhoto) {
+      try {
+        await removeRecipePhotos([uploadedPhoto.storagePath]);
+      } catch (cleanupError) {
+        console.error(
+          "Errore nella rimozione della foto della preparazione dopo il salvataggio fallito:",
+          cleanupError,
+        );
+      }
+    }
+
+    console.error("Errore nel salvataggio della preparazione:", error);
+    setPreparationSaveError(
+      operation === "compression"
+        ? "Non è stato possibile leggere o elaborare la foto. Scegli un file JPEG, PNG o WebP valido e riprova."
+        : operation === "upload"
+          ? "Non è stato possibile caricare la foto. Controlla la connessione e riprova."
+          : "Non è stato possibile salvare la preparazione. I dati del form sono ancora qui: riprova.",
+    );
+  } finally {
+    setIsSavingPreparation(false);
+  }
 }
 
 function resetScaling() {
@@ -786,6 +838,7 @@ function resetScaling() {
             : ""
         }`}
         onClick={() => setNewOutcome("liked")}
+        disabled={isSavingPreparation}
       >
         Mi è piaciuta
       </button>
@@ -798,6 +851,7 @@ function resetScaling() {
             : ""
         }`}
         onClick={() => setNewOutcome("neutral")}
+        disabled={isSavingPreparation}
       >
         Così così
       </button>
@@ -810,34 +864,92 @@ function resetScaling() {
             : ""
         }`}
         onClick={() => setNewOutcome("disliked")}
+        disabled={isSavingPreparation}
       >
         Non mi è piaciuta
       </button>
     </div>
   </div>
 
+    <div className="recipe-detail__preparation-photo-field">
+      <span className="recipe-detail__preparation-photo-label">
+        Foto della preparazione
+      </span>
+      <input
+        key={newPreparationPhotoInputKey}
+        id="new-preparation-photo"
+        className="recipe-detail__preparation-photo-input"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        disabled={isSavingPreparation}
+        onChange={(event) => {
+          setNewPreparationPhotoFile(event.target.files?.[0]);
+          setPreparationSaveError(undefined);
+        }}
+      />
+      <div className="recipe-detail__preparation-photo-actions">
+        <label
+          className="recipe-detail__preparation-photo-action"
+          htmlFor="new-preparation-photo"
+          aria-disabled={isSavingPreparation}
+        >
+          {newPreparationPhotoFile ? "Cambia foto" : "Aggiungi foto"}
+        </label>
+        {newPreparationPhotoFile && (
+          <>
+            <span
+              className="recipe-detail__preparation-photo-name"
+              title={newPreparationPhotoFile.name}
+            >
+              {newPreparationPhotoFile.name}
+            </span>
+            <button
+              type="button"
+              disabled={isSavingPreparation}
+              onClick={() => {
+                setNewPreparationPhotoFile(undefined);
+                setNewPreparationPhotoInputKey((currentKey) => currentKey + 1);
+                setPreparationSaveError(undefined);
+              }}
+            >
+              Rimuovi
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+
     <textarea
       className="recipe-detail__memory-prompt-input"
       value={newMemory}
       onChange={(event) => setNewMemory(event.target.value)}
       placeholder="Un momento, una reazione, qualcosa che vuoi ritrovare..."
+      disabled={isSavingPreparation}
     />
+
+    {preparationSaveError && (
+      <p className="recipe-detail__preparation-save-error" role="alert">
+        {preparationSaveError}
+      </p>
+    )}
 
     <div className="recipe-detail__memory-prompt-actions">
       <button
         type="button"
         className="recipe-detail__memory-prompt-skip"
-        onClick={() => confirmTriedWithoutMemory(recipe)}
+        disabled={isSavingPreparation}
+        onClick={() => confirmTried(recipe, false)}
       >
-        Non ora
+        {isSavingPreparation ? "Salvataggio..." : "Non ora"}
       </button>
 
       <button
         type="button"
         className="recipe-detail__memory-prompt-save"
-        onClick={() => confirmTriedWithMemory(recipe)}
+        disabled={isSavingPreparation}
+        onClick={() => confirmTried(recipe, true)}
       >
-        Custodisci
+        {isSavingPreparation ? "Salvataggio..." : "Custodisci"}
       </button>
     </div>
   </div>

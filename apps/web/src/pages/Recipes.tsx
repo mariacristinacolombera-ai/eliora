@@ -39,6 +39,9 @@ const [searchQuery, setSearchQuery] = useState("");
 const [coverUrlsByRecipeId, setCoverUrlsByRecipeId] = useState<
   Record<string, string>
 >({});
+const [heroPreparationImageUrl, setHeroPreparationImageUrl] = useState<
+  string
+>();
 
 const normalizedSearch = searchQuery
   .trim()
@@ -64,6 +67,21 @@ const filteredRecipes = useMemo(() => recipes.filter((recipe) => {
   );
 }), [normalizedSearch, recipes]);
 
+const latestPreparation = getLatestPreparation(
+  recipes.flatMap((recipe) => recipe.preparations ?? []),
+);
+const latestPreparedRecipe = latestPreparation
+  ? recipes.find((recipe) =>
+      (recipe.preparations ?? []).includes(latestPreparation),
+    )
+  : undefined;
+const latestPreparationPhoto =
+  latestPreparedRecipe && latestPreparation?.photoId
+    ? (latestPreparedRecipe.photos ?? []).find(
+        (photo) => photo.id === latestPreparation.photoId,
+      )
+    : undefined;
+
 const visibleCoverPhotos = useMemo(
   () =>
     filteredRecipes.flatMap((recipe) => {
@@ -84,15 +102,23 @@ useEffect(() => {
   let isCurrent = true;
 
   setCoverUrlsByRecipeId({});
+  setHeroPreparationImageUrl(undefined);
 
-  if (visibleCoverPhotos.length === 0) {
+  if (visibleCoverPhotos.length === 0 && !latestPreparationPhoto) {
     return () => {
       isCurrent = false;
     };
   }
 
   createRecipePhotoSignedUrls(
-    visibleCoverPhotos.map(({ photo }) => photo.storagePath),
+    [
+      ...new Set([
+        ...visibleCoverPhotos.map(({ photo }) => photo.storagePath),
+        ...(latestPreparationPhoto
+          ? [latestPreparationPhoto.storagePath]
+          : []),
+      ]),
+    ],
   )
     .then((signedUrls) => {
       if (!isCurrent) {
@@ -107,6 +133,11 @@ useEffect(() => {
           }),
         ),
       );
+      setHeroPreparationImageUrl(
+        latestPreparationPhoto
+          ? signedUrls[latestPreparationPhoto.storagePath]
+          : undefined,
+      );
     })
     .catch((error: unknown) => {
       console.error("Failed to load recipe card cover photos", error);
@@ -115,7 +146,7 @@ useEffect(() => {
   return () => {
     isCurrent = false;
   };
-}, [visibleCoverPhotos]);
+}, [latestPreparationPhoto, visibleCoverPhotos]);
 
   useEffect(() => {
   if (!createdRecipeId) {
@@ -164,15 +195,6 @@ const cleanNavigationTimer = setTimeout(() => {
   };
 }, []);
   
-
-const latestPreparation = getLatestPreparation(
-  recipes.flatMap((recipe) => recipe.preparations ?? []),
-);
-const latestPreparedRecipe = latestPreparation
-  ? recipes.find((recipe) =>
-      (recipe.preparations ?? []).includes(latestPreparation),
-    )
-  : undefined;
 
   return (
   <>
@@ -226,6 +248,7 @@ const latestPreparedRecipe = latestPreparation
     memory={
       latestPreparation.memory
     }
+    preparationImageUrl={heroPreparationImageUrl}
     onRemember={(memory) => {
       const updatedRecipe = {
         ...latestPreparedRecipe,
