@@ -28,6 +28,15 @@ import {
   getPreparationsByRecency,
 } from "../lib/recipePreparations";
 
+function isSafeWebUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 type RecipeDetailProps = {
   recipes: Recipe[];
   onUpdate: (recipe: Recipe) => Promise<boolean>;
@@ -231,7 +240,11 @@ const displayedIngredients = scaleIngredients(
   (item) => item.parentRecipeId === recipe.id,
   );
 
-  function formatPreparationDate(date: string) {
+  function formatPreparationDate(date?: string) {
+  if (!date) {
+    return "Data non disponibile";
+  }
+
   const preparationDate = new Date(date);
   const today = new Date();
 
@@ -1398,7 +1411,7 @@ onBlur={() => {
             </p>
           )}
 
-          {recipe.source.url && (
+          {recipe.source.url && isSafeWebUrl(recipe.source.url) && (
             <a
               className="recipe-detail__source-link"
               href={recipe.source.url}
@@ -1407,6 +1420,12 @@ onBlur={() => {
             >
               Apri la fonte originale
             </a>
+          )}
+
+          {recipe.source.url && !isSafeWebUrl(recipe.source.url) && (
+            <p className="recipe-detail__source-link">
+              {recipe.source.url}
+            </p>
           )}
         </section>
       )}

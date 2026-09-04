@@ -128,13 +128,16 @@ async function detachRecipeVariant(variant: Recipe): Promise<boolean> {
     );
 
     try {
-      const remoteVariant = await loadRecipeFromSupabase(variant.id);
+      const remoteResult = await loadRecipeFromSupabase(variant.id);
 
-      if (!remoteVariant || remoteVariant.parentRecipeId !== undefined) {
+      if (
+        remoteResult.status !== "found" ||
+        remoteResult.recipe.parentRecipeId !== undefined
+      ) {
         return false;
       }
 
-      confirmedVariant = remoteVariant;
+      confirmedVariant = remoteResult.recipe;
     } catch (verificationError) {
       console.error(
         "Esito dello scollegamento variante incerto: verifica remota fallita.",
@@ -169,8 +172,15 @@ async function deleteRecipe(recipe: Recipe): Promise<boolean> {
     );
 
     try {
-      databaseDeleteConfirmed =
-        (await loadRecipeFromSupabase(recipe.id)) === null;
+      const remoteResult = await loadRecipeFromSupabase(recipe.id);
+      databaseDeleteConfirmed = remoteResult.status === "not_found";
+
+      if (remoteResult.status === "invalid") {
+        console.error(
+          "Cancellazione Recipe non confermata: la riga esiste con payload invalido.",
+          { recipeId: recipe.id, issues: remoteResult.issues },
+        );
+      }
     } catch (verificationError) {
       console.error(
         "Esito della cancellazione Recipe incerto: verifica remota fallita; stato locale e foto conservati.",

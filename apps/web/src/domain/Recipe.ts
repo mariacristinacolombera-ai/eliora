@@ -39,7 +39,7 @@ export type RecipePhoto = {
 
 export type RecipePreparation = {
   id: string;
-  preparedAt: string;
+  preparedAt?: string;
   outcome?: "liked" | "neutral" | "disliked";
   memory?: string;
   photoId?: string;

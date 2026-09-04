@@ -1,7 +1,9 @@
 import type { RecipePreparation } from "../domain/Recipe";
 
 function preparationTimestamp(preparation: RecipePreparation): number {
-  const timestamp = new Date(preparation.preparedAt).getTime();
+  const timestamp = preparation.preparedAt
+    ? new Date(preparation.preparedAt).getTime()
+    : Number.NaN;
 
   return Number.isFinite(timestamp) ? timestamp : Number.NEGATIVE_INFINITY;
 }
@@ -23,11 +25,12 @@ export function getPreparationsByRecency(
 
 export function getLatestPreparation(
   preparations?: readonly RecipePreparation[],
-): RecipePreparation | undefined {
+): (RecipePreparation & { preparedAt: string }) | undefined {
   const latestPreparation = getPreparationsByRecency(preparations)[0];
 
   return latestPreparation &&
+    typeof latestPreparation.preparedAt === "string" &&
     Number.isFinite(new Date(latestPreparation.preparedAt).getTime())
-    ? latestPreparation
+    ? (latestPreparation as RecipePreparation & { preparedAt: string })
     : undefined;
 }

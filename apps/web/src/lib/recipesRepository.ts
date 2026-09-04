@@ -1,5 +1,28 @@
 import type { Recipe } from "../domain/Recipe";
+import {
+  normalizeRecipe,
+  type NormalizeRecipeIssue,
+} from "../domain/normalizeRecipe";
 import { supabase } from "./supabase";
+
+export type LoadRecipeFromSupabaseResult =
+  | { status: "found"; recipe: Recipe }
+  | { status: "not_found" }
+  | { status: "invalid"; issues: NormalizeRecipeIssue[] };
+
+function logNormalizationIssues(
+  context: { recipeId?: string; rowIndex?: number },
+  issues: NormalizeRecipeIssue[],
+): void {
+  if (issues.length === 0) {
+    return;
+  }
+
+  console.warn("Recipe JSON normalized with diagnostics.", {
+    ...context,
+    issues,
+  });
+}
 
 export async function saveRecipeToSupabase(
   recipe: Recipe,
@@ -49,7 +72,7 @@ export async function loadRecipesFromSupabase(): Promise<
 
   const { data, error } = await supabase
     .from("recipes")
-    .select("data, created_at")
+    .select("id, data, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -57,12 +80,29 @@ export async function loadRecipesFromSupabase(): Promise<
     throw error;
   }
 
-  return (data ?? []).map((row) => row.data as Recipe);
+  return (data ?? []).flatMap((row, rowIndex) => {
+    const result = normalizeRecipe(row.data);
+
+    if (!result.ok) {
+      console.error("Invalid Recipe JSON skipped during list load.", {
+        recipeId: row.id,
+        rowIndex,
+        issues: result.issues,
+      });
+      return [];
+    }
+
+    logNormalizationIssues(
+      { recipeId: row.id, rowIndex },
+      result.issues,
+    );
+    return [result.recipe];
+  });
 }
 
 export async function loadRecipeFromSupabase(
   recipeId: string,
-): Promise<Recipe | null> {
+): Promise<LoadRecipeFromSupabaseResult> {
   const {
     data: { user },
     error: userError,
@@ -87,7 +127,22 @@ export async function loadRecipeFromSupabase(
     throw error;
   }
 
-  return data ? (data.data as Recipe) : null;
+  if (!data) {
+    return { status: "not_found" };
+  }
+
+  const result = normalizeRecipe(data.data);
+
+  if (!result.ok) {
+    console.error("Invalid Recipe JSON found during single Recipe load.", {
+      recipeId,
+      issues: result.issues,
+    });
+    return { status: "invalid", issues: result.issues };
+  }
+
+  logNormalizationIssues({ recipeId }, result.issues);
+  return { status: "found", recipe: result.recipe };
 }
 
 export async function deleteRecipeFromSupabase(

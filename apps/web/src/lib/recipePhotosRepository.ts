@@ -156,10 +156,10 @@ export async function compensateRecipePhotoAfterFailedSave(
   recipeId: string,
   photo: RecipePhoto,
 ): Promise<void> {
-  let remoteRecipe;
+  let remoteResult;
 
   try {
-    remoteRecipe = await loadRecipeFromSupabase(recipeId);
+    remoteResult = await loadRecipeFromSupabase(recipeId);
   } catch (error) {
     console.error(
       "Recipe photo cleanup left uncertain: unable to verify the remote Recipe; preserving the potentially referenced file.",
@@ -168,7 +168,23 @@ export async function compensateRecipePhotoAfterFailedSave(
     return;
   }
 
-  if (remoteRecipe && recipeReferencesPhoto(remoteRecipe, photo.id)) {
+  if (remoteResult.status === "invalid") {
+    console.error(
+      "Recipe photo cleanup left uncertain: the remote Recipe payload is invalid; preserving the potentially referenced file.",
+      {
+        recipeId,
+        photoId: photo.id,
+        storagePath: photo.storagePath,
+        issues: remoteResult.issues,
+      },
+    );
+    return;
+  }
+
+  if (
+    remoteResult.status === "found" &&
+    recipeReferencesPhoto(remoteResult.recipe, photo.id)
+  ) {
     console.info(
       "Recipe photo cleanup skipped: the remote Recipe already references the uploaded photo.",
       { recipeId, photoId: photo.id, storagePath: photo.storagePath },
