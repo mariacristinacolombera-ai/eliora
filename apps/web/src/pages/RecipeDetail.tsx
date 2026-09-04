@@ -3,7 +3,7 @@ import type {
   Recipe,
   RecipePreparation,
 } from "../domain/Recipe";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   parseQuantity,
   scaleIngredients,
@@ -15,6 +15,7 @@ import {
   Pencil,
   Trash2,
   Repeat2,
+  X,
 } from "lucide-react";
 import {
   compensateRecipePhotoAfterFailedSave,
@@ -80,6 +81,11 @@ export default function RecipeDetail({
     recipeId: string;
     byPhotoId: Record<string, string>;
   } | null>(null);
+  const [enlargedPreparationPhoto, setEnlargedPreparationPhoto] = useState<{
+    url: string;
+    alt: string;
+  } | null>(null);
+  const preparationPhotoTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [deleteVariantsToo, setDeleteVariantsToo] = useState(false);
   const [scaledServings, setScaledServings] =
   useState<string | null>(null);
@@ -147,6 +153,32 @@ const [
       isCurrent = false;
     };
   }, [currentRecipeId, requestedPhotos]);
+
+  useEffect(() => {
+    if (!enlargedPreparationPhoto) {
+      return;
+    }
+
+    const previousBodyOverflow = document.body.style.overflow;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setEnlargedPreparationPhoto(null);
+      }
+    }
+
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+
+      if (preparationPhotoTriggerRef.current?.isConnected) {
+        preparationPhotoTriggerRef.current.focus();
+      }
+    };
+  }, [enlargedPreparationPhoto]);
 
   if (isLoading) {
   return (
@@ -298,27 +330,39 @@ function renderPreparationPhoto(preparation: RecipePreparation) {
     return null;
   }
 
+  const alt = `Foto della preparazione di ${currentRecipe.title} del ${formatPreparationDate(preparation.preparedAt)}`;
+
   return (
     <figure className="recipe-detail__preparation-photo">
-      <img
-        src={url}
-        alt={`Foto della preparazione di ${currentRecipe.title} del ${formatPreparationDate(preparation.preparedAt)}`}
-        onError={() => {
-          setPhotoUrls((currentPhotoUrls) => {
-            if (
-              !currentPhotoUrls ||
-              currentPhotoUrls.recipeId !== currentRecipe.id
-            ) {
-              return currentPhotoUrls;
-            }
-
-            const byPhotoId = { ...currentPhotoUrls.byPhotoId };
-            delete byPhotoId[preparation.photoId!];
-
-            return { ...currentPhotoUrls, byPhotoId };
-          });
+      <button
+        type="button"
+        className="recipe-detail__preparation-photo-button"
+        aria-label={`Ingrandisci: ${alt}`}
+        onClick={(event) => {
+          preparationPhotoTriggerRef.current = event.currentTarget;
+          setEnlargedPreparationPhoto({ url, alt });
         }}
-      />
+      >
+        <img
+          src={url}
+          alt={alt}
+          onError={() => {
+            setPhotoUrls((currentPhotoUrls) => {
+              if (
+                !currentPhotoUrls ||
+                currentPhotoUrls.recipeId !== currentRecipe.id
+              ) {
+                return currentPhotoUrls;
+              }
+
+              const byPhotoId = { ...currentPhotoUrls.byPhotoId };
+              delete byPhotoId[preparation.photoId!];
+
+              return { ...currentPhotoUrls, byPhotoId };
+            });
+          }}
+        />
+      </button>
     </figure>
   );
 }
@@ -1428,6 +1472,37 @@ onBlur={() => {
             </p>
           )}
         </section>
+      )}
+
+      {enlargedPreparationPhoto && (
+        <div
+          className="recipe-detail__photo-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Foto della preparazione ingrandita"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setEnlargedPreparationPhoto(null);
+            }
+          }}
+        >
+          <button
+            type="button"
+            className="recipe-detail__photo-lightbox-close"
+            aria-label="Chiudi foto ingrandita"
+            onClick={() => setEnlargedPreparationPhoto(null)}
+            autoFocus
+          >
+            <X aria-hidden="true" size={24} strokeWidth={1.7} />
+          </button>
+
+          <img
+            className="recipe-detail__photo-lightbox-image"
+            src={enlargedPreparationPhoto.url}
+            alt={enlargedPreparationPhoto.alt}
+            onClick={(event) => event.stopPropagation()}
+          />
+        </div>
       )}
     </main>
   );
