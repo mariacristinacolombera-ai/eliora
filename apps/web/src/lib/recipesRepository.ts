@@ -60,6 +60,36 @@ export async function loadRecipesFromSupabase(): Promise<
   return (data ?? []).map((row) => row.data as Recipe);
 }
 
+export async function loadRecipeFromSupabase(
+  recipeId: string,
+): Promise<Recipe | null> {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    throw userError;
+  }
+
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+
+  const { data, error } = await supabase
+    .from("recipes")
+    .select("data")
+    .eq("id", recipeId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? (data.data as Recipe) : null;
+}
+
 export async function deleteRecipeFromSupabase(
   recipeId: string,
 ): Promise<void> {

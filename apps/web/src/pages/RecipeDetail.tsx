@@ -17,8 +17,9 @@ import {
   Repeat2,
 } from "lucide-react";
 import {
+  compensateRecipePhotoAfterFailedSave,
+  createRecipePhotoUploadTarget,
   createRecipePhotoSignedUrls,
-  removeRecipePhotos,
   uploadRecipePhoto,
 } from "../lib/recipePhotosRepository";
 import { compressRecipePhoto } from "../lib/imageCompression";
@@ -30,7 +31,8 @@ import {
 type RecipeDetailProps = {
   recipes: Recipe[];
   onUpdate: (recipe: Recipe) => Promise<boolean>;
-  onDelete: (recipeId: string) => void;
+  onDetachVariant: (recipe: Recipe) => Promise<boolean>;
+  onDelete: (recipe: Recipe) => Promise<boolean>;
   isLoading: boolean;
 };
 
@@ -38,6 +40,7 @@ export default function RecipeDetail({
   recipes,
   isLoading,
   onUpdate,
+  onDetachVariant,
   onDelete,
 }: RecipeDetailProps) {
   const navigate = useNavigate();
@@ -62,6 +65,8 @@ export default function RecipeDetail({
   const [isSavingPreparation, setIsSavingPreparation] = useState(false);
   const [preparationSaveError, setPreparationSaveError] = useState<string>();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>();
   const [photoUrls, setPhotoUrls] = useState<{
     recipeId: string;
     byPhotoId: Record<string, string>;
@@ -504,24 +509,56 @@ function renderEditableMemory(preparation: RecipePreparation) {
   setShowMemoryPrompt(true);
 }
 
-function confirmDelete(recipeToDelete: Recipe) {
-  if (childVariants.length > 0) {
-    if (deleteVariantsToo) {
-      childVariants.forEach((variant) => {
-        onDelete(variant.id);
-      });
-    } else {
-      childVariants.forEach((variant) => {
-        onUpdate({
-          ...variant,
-          parentRecipeId: undefined,
-        });
-      });
-    }
+async function confirmDelete(recipeToDelete: Recipe) {
+  if (isDeleting) {
+    return;
   }
 
-  onDelete(recipeToDelete.id);
-  navigate("/recipes");
+  setIsDeleting(true);
+  setDeleteError(undefined);
+
+  try {
+    if (deleteVariantsToo) {
+      for (const variant of childVariants) {
+        const didDeleteVariant = await onDelete(variant);
+
+        if (!didDeleteVariant) {
+          setDeleteError(
+            "Alcune varianti sono state eliminate, ma non è stato possibile completare la cancellazione. La ricetta principale è ancora disponibile.",
+          );
+          return;
+        }
+      }
+    } else {
+      for (const variant of childVariants) {
+        const didDetachVariant = await onDetachVariant(variant);
+
+        if (!didDetachVariant) {
+          setDeleteError(
+            "Non è stato possibile scollegare tutte le varianti. La ricetta non è stata eliminata.",
+          );
+          return;
+        }
+      }
+    }
+
+    const didDeleteRecipe = await onDelete(recipeToDelete);
+
+    if (!didDeleteRecipe) {
+      setDeleteError(
+        childVariants.length === 0
+          ? "Non è stato possibile eliminare la ricetta."
+          : deleteVariantsToo
+          ? "Le varianti elaborate sono state eliminate, ma non è stato possibile eliminare la ricetta principale."
+          : "Le varianti sono state scollegate, ma non è stato possibile eliminare la ricetta principale.",
+      );
+      return;
+    }
+
+    navigate("/recipes");
+  } finally {
+    setIsDeleting(false);
+  }
 }
 
 async function confirmTried(
@@ -536,6 +573,9 @@ async function confirmTried(
   setPreparationSaveError(undefined);
 
   let uploadedPhoto: Awaited<ReturnType<typeof uploadRecipePhoto>> | undefined;
+  let photoUploadTarget: Awaited<
+    ReturnType<typeof createRecipePhotoUploadTarget>
+  > | undefined;
   let operation: "compression" | "upload" | "save" = "compression";
 
   try {
@@ -543,9 +583,10 @@ async function confirmTried(
       const compressedPhoto = await compressRecipePhoto(
         newPreparationPhotoFile,
       );
+      photoUploadTarget = await createRecipePhotoUploadTarget(recipeToUpdate.id);
       operation = "upload";
       uploadedPhoto = await uploadRecipePhoto({
-        recipeId: recipeToUpdate.id,
+        photo: photoUploadTarget,
         file: compressedPhoto,
       });
     }
@@ -581,15 +622,16 @@ async function confirmTried(
     setNewPreparationPhotoFile(undefined);
     setNewPreparationPhotoInputKey((currentKey) => currentKey + 1);
   } catch (error) {
-    if (uploadedPhoto) {
-      try {
-        await removeRecipePhotos([uploadedPhoto.storagePath]);
-      } catch (cleanupError) {
-        console.error(
-          "Errore nella rimozione della foto della preparazione dopo il salvataggio fallito:",
-          cleanupError,
-        );
-      }
+    if (uploadedPhoto && operation === "save") {
+      await compensateRecipePhotoAfterFailedSave(
+        recipeToUpdate.id,
+        uploadedPhoto,
+      );
+    } else if (photoUploadTarget && operation === "upload") {
+      console.error(
+        "Recipe photo upload outcome is uncertain; preserving the known path for later cleanup rather than deleting it.",
+        photoUploadTarget,
+      );
     }
 
     console.error("Errore nel salvataggio della preparazione:", error);
@@ -765,6 +807,7 @@ function resetScaling() {
     type="button"
     className="recipe-detail__delete eliora-button--icon"
     onClick={() => setShowDeleteConfirm(true)}
+    disabled={isDeleting}
     aria-label="Elimina ricetta"
     title="Elimina ricetta"
   >
@@ -786,6 +829,7 @@ function resetScaling() {
           onChange={(event) =>
             setDeleteVariantsToo(event.target.checked)
           }
+          disabled={isDeleting}
         />
 
         Elimina anche le varianti
@@ -799,7 +843,9 @@ function resetScaling() {
     onClick={() => {
       setShowDeleteConfirm(false);
       setDeleteVariantsToo(false);
+      setDeleteError(undefined);
     }}
+    disabled={isDeleting}
   >
     Annulla
   </button>
@@ -808,10 +854,16 @@ function resetScaling() {
     type="button"
     className="eliora-button--destructive"
     onClick={() => confirmDelete(recipe)}
+    disabled={isDeleting}
   >
-    Conferma eliminazione
+    {isDeleting ? "Eliminazione..." : "Conferma eliminazione"}
   </button>
 </div>
+  {deleteError && (
+    <p role="alert">
+      {deleteError}
+    </p>
+  )}
   </div>
 )}
 

@@ -20,6 +20,8 @@ import type {
 } from "../domain/Recipe";
 import { compressRecipePhoto } from "../lib/imageCompression";
 import {
+  compensateRecipePhotoAfterFailedSave,
+  createRecipePhotoUploadTarget,
   removeRecipePhotos,
   uploadRecipePhoto,
 } from "../lib/recipePhotosRepository";
@@ -61,14 +63,14 @@ export default function NewRecipe({
 }: NewRecipeProps) {
 
 const navigate = useNavigate();
-const { recipeId } = useParams();
+const { recipeId: routeRecipeId } = useParams();
 
-const baseRecipe = recipeId
-  ? recipes.find((recipe) => recipe.id === recipeId)
+const baseRecipe = routeRecipeId
+  ? recipes.find((recipe) => recipe.id === routeRecipeId)
   : undefined;
 
 const isEditing = Boolean(
-  recipeId && window.location.pathname.endsWith("/edit"),
+  routeRecipeId && window.location.pathname.endsWith("/edit"),
 );
 
 const isCreatingVariant = Boolean(
@@ -191,6 +193,9 @@ const [photoInputKey, setPhotoInputKey] = useState(0);
 const [removeExistingCover, setRemoveExistingCover] = useState(false);
 const [isSubmitting, setIsSubmitting] = useState(false);
 const [saveError, setSaveError] = useState<string>();
+const [newRecipeId] = useState(
+  () => `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+);
 
 const [sourceName, setSourceName] = useState(
   baseRecipe?.source?.name ?? "",
@@ -324,11 +329,14 @@ function removeTag(tagToRemove: string) {
 
   const normalizedYieldQuantity = yieldQuantity.trim();
   const normalizedYieldUnit = yieldUnit.trim();
-  const recipeId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const recipeId = newRecipeId;
 
   if (isEditing && baseRecipe && onUpdate) {
     setIsSubmitting(true);
     let uploadedPhoto: Awaited<ReturnType<typeof uploadRecipePhoto>> | undefined;
+    let photoUploadTarget: Awaited<
+      ReturnType<typeof createRecipePhotoUploadTarget>
+    > | undefined;
     let operation: "compression" | "upload" | "save" = "compression";
     const oldCoverPhoto = baseRecipe.photos?.find(
       (photo) => photo.id === baseRecipe.coverPhotoId,
@@ -340,9 +348,10 @@ function removeTag(tagToRemove: string) {
     try {
       if (photoFile) {
         const compressedPhoto = await compressRecipePhoto(photoFile);
+        photoUploadTarget = await createRecipePhotoUploadTarget(baseRecipe.id);
         operation = "upload";
         uploadedPhoto = await uploadRecipePhoto({
-          recipeId: baseRecipe.id,
+          photo: photoUploadTarget,
           file: compressedPhoto,
         });
       }
@@ -418,8 +427,12 @@ function removeTag(tagToRemove: string) {
           await removeRecipePhotos([oldCoverPhoto.storagePath]);
         } catch (cleanupError) {
           console.error(
-            "Errore nella rimozione della precedente foto di copertina:",
-            cleanupError,
+            "Recipe aggiornata, ma cleanup della precedente cover fallito: possibile file orfano conservato.",
+            {
+              recipeId: baseRecipe.id,
+              storagePaths: [oldCoverPhoto.storagePath],
+              cleanupError,
+            },
           );
         }
       }
@@ -431,15 +444,16 @@ function removeTag(tagToRemove: string) {
     }, 550);
 
     } catch (error) {
-      if (uploadedPhoto) {
-        try {
-          await removeRecipePhotos([uploadedPhoto.storagePath]);
-        } catch (cleanupError) {
-          console.error(
-            "Errore nella rimozione della nuova foto dopo il salvataggio fallito:",
-            cleanupError,
-          );
-        }
+      if (uploadedPhoto && operation === "save") {
+        await compensateRecipePhotoAfterFailedSave(
+          baseRecipe.id,
+          uploadedPhoto,
+        );
+      } else if (photoUploadTarget && operation === "upload") {
+        console.error(
+          "Recipe photo upload outcome is uncertain; preserving the known path for later cleanup rather than deleting it.",
+          photoUploadTarget,
+        );
       }
 
       console.error("Errore nella modifica della ricetta:", error);
@@ -459,14 +473,18 @@ function removeTag(tagToRemove: string) {
 
   setIsSubmitting(true);
   let uploadedPhoto: Awaited<ReturnType<typeof uploadRecipePhoto>> | undefined;
+  let photoUploadTarget: Awaited<
+    ReturnType<typeof createRecipePhotoUploadTarget>
+  > | undefined;
   let operation: "compression" | "upload" | "save" = "compression";
 
   try {
     if (photoFile) {
       const compressedPhoto = await compressRecipePhoto(photoFile);
+      photoUploadTarget = await createRecipePhotoUploadTarget(recipeId);
       operation = "upload";
       uploadedPhoto = await uploadRecipePhoto({
-        recipeId,
+        photo: photoUploadTarget,
         file: compressedPhoto,
       });
     }
@@ -564,15 +582,13 @@ setTimeout(() => {
 }, 550);
 
   } catch (error) {
-    if (uploadedPhoto) {
-      try {
-        await removeRecipePhotos([uploadedPhoto.storagePath]);
-      } catch (cleanupError) {
-        console.error(
-          "Errore nella rimozione della foto dopo il salvataggio fallito:",
-          cleanupError,
-        );
-      }
+    if (uploadedPhoto && operation === "save") {
+      await compensateRecipePhotoAfterFailedSave(recipeId, uploadedPhoto);
+    } else if (photoUploadTarget && operation === "upload") {
+      console.error(
+        "Recipe photo upload outcome is uncertain; preserving the known path for later cleanup rather than deleting it.",
+        photoUploadTarget,
+      );
     }
 
     console.error("Errore nella creazione della ricetta:", error);

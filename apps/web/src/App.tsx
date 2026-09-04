@@ -1,6 +1,7 @@
 import { supabase } from "./lib/supabase";
 import {
   deleteRecipeFromSupabase,
+  loadRecipeFromSupabase,
   loadRecipesFromSupabase,
   saveRecipeToSupabase,
 } from "./lib/recipesRepository";
@@ -14,6 +15,10 @@ import NewRecipe from "./pages/NewRecipe";
 import RecipeDetail from "./pages/RecipeDetail";
 
 import type { Recipe } from "./domain/Recipe";
+import {
+  getRecipePhotoStoragePaths,
+  removeRecipePhotos,
+} from "./lib/recipePhotosRepository";
 
 export default function App() {
 
@@ -107,21 +112,94 @@ async function updateRecipe(updatedRecipe: Recipe) {
   }
 }
 
-async function deleteRecipe(recipeId: string) {
+async function detachRecipeVariant(variant: Recipe): Promise<boolean> {
+  const detachedVariant: Recipe = {
+    ...variant,
+    parentRecipeId: undefined,
+  };
+  let confirmedVariant: Recipe = detachedVariant;
+
+  try {
+    await saveRecipeToSupabase(detachedVariant);
+  } catch (error) {
+    console.error(
+      "Errore nello scollegamento della variante da Supabase:",
+      { recipeId: variant.id, error },
+    );
+
+    try {
+      const remoteVariant = await loadRecipeFromSupabase(variant.id);
+
+      if (!remoteVariant || remoteVariant.parentRecipeId !== undefined) {
+        return false;
+      }
+
+      confirmedVariant = remoteVariant;
+    } catch (verificationError) {
+      console.error(
+        "Esito dello scollegamento variante incerto: verifica remota fallita.",
+        { recipeId: variant.id, verificationError },
+      );
+      return false;
+    }
+  }
+
   setRecipes((currentRecipes) =>
-    currentRecipes.filter(
-      (recipe) => recipe.id !== recipeId,
+    currentRecipes.map((currentRecipe) =>
+      currentRecipe.id === confirmedVariant.id
+        ? confirmedVariant
+        : currentRecipe,
     ),
   );
 
+  return true;
+}
+
+async function deleteRecipe(recipe: Recipe): Promise<boolean> {
+  const storagePaths = getRecipePhotoStoragePaths(recipe);
+  let databaseDeleteConfirmed = false;
+
   try {
-    await deleteRecipeFromSupabase(recipeId);
+    await deleteRecipeFromSupabase(recipe.id);
+    databaseDeleteConfirmed = true;
   } catch (error) {
     console.error(
       "Errore nell'eliminazione della ricetta da Supabase:",
-      error,
+      { recipeId: recipe.id, error },
     );
+
+    try {
+      databaseDeleteConfirmed =
+        (await loadRecipeFromSupabase(recipe.id)) === null;
+    } catch (verificationError) {
+      console.error(
+        "Esito della cancellazione Recipe incerto: verifica remota fallita; stato locale e foto conservati.",
+        { recipeId: recipe.id, storagePaths, verificationError },
+      );
+      return false;
+    }
+
+    if (!databaseDeleteConfirmed) {
+      return false;
+    }
   }
+
+  setRecipes((currentRecipes) =>
+    currentRecipes.filter((currentRecipe) => currentRecipe.id !== recipe.id),
+  );
+
+  if (storagePaths.length > 0) {
+    try {
+      await removeRecipePhotos(storagePaths);
+    } catch (cleanupError) {
+      console.error(
+        "Recipe eliminata, ma cleanup Storage fallito: possibili file orfani conservati.",
+        { recipeId: recipe.id, storagePaths, cleanupError },
+      );
+    }
+  }
+
+  return true;
 }
 
 if (isAuthenticated === null) {
@@ -191,6 +269,7 @@ if (!isAuthenticated) {
   recipes={recipes}
   isLoading={!hasLoadedRecipes}
   onUpdate={updateRecipe}
+  onDetachVariant={detachRecipeVariant}
   onDelete={deleteRecipe}
 />
   }

@@ -1,5 +1,6 @@
-import type { RecipePhoto } from "../domain/Recipe";
+import type { Recipe, RecipePhoto } from "../domain/Recipe";
 import { supabase } from "./supabase";
+import { loadRecipeFromSupabase } from "./recipesRepository";
 
 export const RECIPE_PHOTOS_BUCKET = "recipe-photos";
 export const RECIPE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
@@ -83,16 +84,26 @@ export function buildRecipePhotoStoragePath(
   return `${userId}/${recipeId}/${photoId}.webp`;
 }
 
+export async function createRecipePhotoUploadTarget(
+  recipeId: string,
+): Promise<RecipePhoto> {
+  const userId = await getAuthenticatedUserId();
+  const photoId = createRecipePhotoId();
+
+  return {
+    id: photoId,
+    storagePath: buildRecipePhotoStoragePath(userId, recipeId, photoId),
+  };
+}
+
 type UploadRecipePhotoInput = {
-  recipeId: string;
+  photo: RecipePhoto;
   file: Blob;
-  photoId?: string;
 };
 
 export async function uploadRecipePhoto({
-  recipeId,
+  photo,
   file,
-  photoId = createRecipePhotoId(),
 }: UploadRecipePhotoInput): Promise<RecipePhoto> {
   if (file.type !== "image/webp") {
     throw new Error("Recipe photos must be WebP images");
@@ -103,15 +114,11 @@ export async function uploadRecipePhoto({
   }
 
   const userId = await getAuthenticatedUserId();
-  const storagePath = buildRecipePhotoStoragePath(
-    userId,
-    recipeId,
-    photoId,
-  );
+  assertPathsBelongToUser([photo.storagePath], userId);
 
   const { error } = await supabase.storage
     .from(RECIPE_PHOTOS_BUCKET)
-    .upload(storagePath, file, {
+    .upload(photo.storagePath, file, {
       contentType: "image/webp",
       upsert: false,
     });
@@ -120,10 +127,63 @@ export async function uploadRecipePhoto({
     throw error;
   }
 
-  return {
-    id: photoId,
-    storagePath,
+  return photo;
+}
+
+function recipeReferencesPhoto(recipe: unknown, photoId: string): boolean {
+  if (!recipe || typeof recipe !== "object") {
+    return false;
+  }
+
+  const candidate = recipe as {
+    coverPhotoId?: unknown;
+    photos?: Array<{ id?: unknown }>;
+    preparations?: Array<{ photoId?: unknown }>;
   };
+
+  return (
+    candidate.coverPhotoId === photoId ||
+    (Array.isArray(candidate.photos) &&
+      candidate.photos.some((photo) => photo?.id === photoId)) ||
+    (Array.isArray(candidate.preparations) &&
+      candidate.preparations.some(
+        (preparation) => preparation?.photoId === photoId,
+      ))
+  );
+}
+
+export async function compensateRecipePhotoAfterFailedSave(
+  recipeId: string,
+  photo: RecipePhoto,
+): Promise<void> {
+  let remoteRecipe;
+
+  try {
+    remoteRecipe = await loadRecipeFromSupabase(recipeId);
+  } catch (error) {
+    console.error(
+      "Recipe photo cleanup left uncertain: unable to verify the remote Recipe; preserving the potentially referenced file.",
+      { recipeId, photoId: photo.id, storagePath: photo.storagePath, error },
+    );
+    return;
+  }
+
+  if (remoteRecipe && recipeReferencesPhoto(remoteRecipe, photo.id)) {
+    console.info(
+      "Recipe photo cleanup skipped: the remote Recipe already references the uploaded photo.",
+      { recipeId, photoId: photo.id, storagePath: photo.storagePath },
+    );
+    return;
+  }
+
+  try {
+    await removeRecipePhotos([photo.storagePath]);
+  } catch (error) {
+    console.error(
+      "Recipe photo cleanup left uncertain: the remote Recipe does not reference the photo, but Storage deletion failed.",
+      { recipeId, photoId: photo.id, storagePath: photo.storagePath, error },
+    );
+  }
 }
 
 export async function removeRecipePhotos(
@@ -145,6 +205,26 @@ export async function removeRecipePhotos(
   if (error) {
     throw error;
   }
+}
+
+export function getRecipePhotoStoragePaths(
+  recipe: Pick<Recipe, "photos">,
+): string[] {
+  if (!Array.isArray(recipe.photos)) {
+    return [];
+  }
+
+  return [
+    ...new Set(
+      recipe.photos.flatMap((photo) =>
+        photo &&
+        typeof photo.storagePath === "string" &&
+        photo.storagePath.length > 0
+          ? [photo.storagePath]
+          : [],
+      ),
+    ),
+  ];
 }
 
 export async function createRecipePhotoSignedUrls(
