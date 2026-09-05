@@ -811,15 +811,17 @@ function resetScaling() {
       Ultima preparazione
     </span>
 
-    <span className="recipe-detail__last-preparation-date">
-      {formatPreparationDate(lastPreparation.preparedAt)}
-    </span>
-
-    {lastPreparation.outcome && (
-      <span className="recipe-detail__last-preparation-outcome">
-        {formatOutcome(lastPreparation.outcome)}
+    <div className="recipe-detail__last-preparation-details">
+      <span className="recipe-detail__last-preparation-date">
+        {formatPreparationDate(lastPreparation.preparedAt)}
       </span>
-    )}
+
+      {lastPreparation.outcome && (
+        <span className="recipe-detail__last-preparation-outcome">
+          {formatOutcome(lastPreparation.outcome)}
+        </span>
+      )}
+    </div>
   </div>
 )}
 

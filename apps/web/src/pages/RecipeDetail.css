@@ -52,7 +52,7 @@
 
   width: 12.5rem;
   margin: 0;
-  padding: 0.65rem;
+  padding: 0.4rem;
 
   background: #fffefa;
   box-shadow:
@@ -66,17 +66,21 @@
   content: "";
   position: absolute;
   z-index: 1;
-  top: -0.55rem;
-  right: 0.75rem;
+  top: -0.65rem;
+  left: 50%;
 
-  width: 0.65rem;
+  width: 4rem;
   height: 1.25rem;
 
-  border: 2px solid rgba(94, 88, 78, 0.55);
-  border-bottom: 0;
-  border-radius: 0.5rem 0.5rem 0 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12), transparent 28% 72%, rgba(156, 112, 65, 0.08)),
+    rgba(232, 191, 123, 0.7);
+  box-shadow: 0 1px 3px rgba(70, 57, 40, 0.1);
+  clip-path: polygon(2% 8%, 98% 0, 96% 92%, 0 100%);
+  opacity: 0.94;
+  pointer-events: none;
 
-  transform: rotate(8deg);
+  transform: translateX(-50%) rotate(-8deg);
 }
 
 .recipe-detail__cover-photo img {
@@ -103,6 +107,12 @@
     margin: 0.55rem -0.15rem 0.55rem 0.9rem;
 
     transform: rotate(1.8deg);
+  }
+
+  .recipe-detail__cover-photo::before {
+    top: -0.55rem;
+    width: 3.25rem;
+    height: 1.1rem;
   }
 }
 
@@ -632,7 +642,7 @@
 
 .recipe-detail__last-preparation {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
   gap: 0.45rem;
 
   margin-top: 0.75rem;
@@ -640,6 +650,30 @@
   font-family: var(--font-ui);
   font-size: 0.85rem;
   color: var(--color-muted);
+}
+
+.recipe-detail__last-preparation-details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.45rem 0.75rem;
+  width: 100%;
+  max-width: 26rem;
+}
+
+@media (max-width: 640px) {
+  .recipe-detail__last-preparation {
+    clear: both;
+  }
+
+  .recipe-detail__last-preparation-details {
+    max-width: none;
+  }
+
+  .recipe-detail__header--with-cover .recipe-detail__last-preparation {
+    padding-top: 0.5rem;
+  }
 }
 
 .recipe-detail__history {
@@ -816,14 +850,6 @@
 
   font-size: 0.85rem;
   color: var(--color-primary);
-}
-
-.recipe-detail__last-preparation-outcome::before {
-  content: "·";
-
-  margin-right: 0.45rem;
-
-  color: var(--color-muted);
 }
 
 .recipe-detail__notes {
