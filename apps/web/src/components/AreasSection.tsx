@@ -5,11 +5,13 @@ import "./AreasSection.css";
 const areas = [
   {
     id: "recipes",
+    path: "/recipes",
     title: "Ricette",
     description: "Sapori, prove e ricordi da ritrovare.",
   },
   {
     id: "projects",
+    path: "/projects",
     title: "Progetti",
     description: "Idee che crescono tra le tue mani.",
   },
@@ -54,8 +56,8 @@ export default function AreasSection() {
             key={area.id}
             type="button"
             onClick={() => {
-              if (area.id === "recipes") {
-                navigate("/recipes");
+              if (area.path) {
+                navigate(area.path);
               }
             }}
           >

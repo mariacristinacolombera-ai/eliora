@@ -13,6 +13,9 @@ import Home from "./pages/Home";
 import Recipes from "./pages/Recipes";
 import NewRecipe from "./pages/NewRecipe";
 import RecipeDetail from "./pages/RecipeDetail";
+import ProjectsShell, { type ProjectsLoadState } from "./pages/ProjectsShell";
+import type { Project } from "./domain/Project";
+import { loadProjects } from "./lib/projectsRepository";
 
 import type { Recipe } from "./domain/Recipe";
 import {
@@ -24,14 +27,22 @@ export default function App() {
 
   const [isAuthenticated, setIsAuthenticated] =
   useState<boolean | null>(null);
+  const [projectsUserId, setProjectsUserId] = useState<string | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectsLoadState, setProjectsLoadState] = useState<ProjectsLoadState>("idle");
+  const [projectsLoadAttempt, setProjectsLoadAttempt] = useState(0);
 
   useEffect(() => {
+  let disposed = false;
+  let receivedAuthEvent = false;
   async function checkSession() {
     const {
       data: { session },
     } = await supabase.auth.getSession();
 
+    if (disposed || receivedAuthEvent) return;
     setIsAuthenticated(Boolean(session));
+    setProjectsUserId(session?.user.id ?? null);
   }
 
   checkSession();
@@ -40,14 +51,38 @@ export default function App() {
     data: { subscription },
   } = supabase.auth.onAuthStateChange(
     (_event, session) => {
+      if (disposed) return;
+      receivedAuthEvent = true;
       setIsAuthenticated(Boolean(session));
+      setProjectsUserId(session?.user.id ?? null);
     },
   );
 
   return () => {
+    disposed = true;
     subscription.unsubscribe();
   };
 }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setProjects([]);
+    if (!projectsUserId) {
+      setProjectsLoadState("idle");
+      return;
+    }
+    setProjectsLoadState("loading");
+    loadProjects().then((loaded) => {
+      if (cancelled) return;
+      setProjects(loaded);
+      setProjectsLoadState("ready");
+    }).catch((error: unknown) => {
+      if (cancelled) return;
+      console.error("Errore nel caricamento dei progetti da Supabase:", error);
+      setProjectsLoadState("error");
+    });
+    return () => { cancelled = true; };
+  }, [projectsUserId, projectsLoadAttempt]);
 
   const [recipes, setRecipes] =
   useState<Recipe[]>([]);
@@ -226,6 +261,9 @@ if (!isAuthenticated) {
 
   return (
      <Routes>
+      {([ ["/projects", "list"], ["/projects/new", "new"], ["/projects/:id", "detail"], ["/projects/:id/edit", "edit"] ] as const).map(([path, mode]) => (
+        <Route key={path} path={path} element={<ProjectsShell mode={mode} projects={projects} loadState={projectsLoadState} onRetry={() => setProjectsLoadAttempt((attempt) => attempt + 1)} />} />
+      ))}
       <Route
   path="/"
   element={<Home />}
