@@ -1,0 +1,17 @@
+.projects-shell {
+  width: 100%;
+  min-height: 100dvh;
+  padding:
+    max(2rem, env(safe-area-inset-top))
+    clamp(1rem, 4vw, 2rem)
+    max(2rem, env(safe-area-inset-bottom));
+
+  font-family: var(--font-content);
+  color: var(--color-ink);
+  background: var(--surface-page-warm);
+}
+
+.projects-shell__content {
+  width: min(100%, var(--content-width));
+  margin-inline: auto;
+}
