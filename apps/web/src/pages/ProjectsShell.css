@@ -38,3 +38,15 @@
 .projects-details { display: flex; justify-content: space-between; padding-block: 1rem; color: inherit; border-bottom: 1px solid var(--color-primary-border); text-decoration: none; }
 .projects-pattern { margin-top: 2rem; padding: 1.5rem; border: 1px dashed var(--color-primary-border); border-radius: var(--radius-button); }
 .projects-pattern h2 { margin-top: 0; }
+
+.project-workspace--pdf header h1 { font-size: 1.65rem; margin-bottom: 0.4rem; }
+.project-workspace--pdf header p { margin-top: 0; }
+.project-workspace--pdf .projects-counter { position: sticky; top: 0; z-index: 10; margin: 1rem -0.5rem 0; padding: max(0.5rem, env(safe-area-inset-top)) 0.5rem 0; background: var(--surface-page-warm); border-bottom: 1px solid var(--color-primary-border); }
+.project-workspace--pdf .projects-counter h2 { margin: 0 0 0.25rem; }
+.project-workspace--pdf .projects-counter output { font-size: 2rem; }
+.project-workspace--pdf .projects-counter__status { margin: 0; min-height: 1.2em; }
+.project-workspace--pdf .projects-details { padding-block: 0.65rem; font-size: 0.9rem; }
+.projects-pattern-actions { margin-block: 1rem; }
+.projects-pattern-buttons { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.projects-pattern-title { overflow-wrap: anywhere; font-size: 0.9rem; }
+.projects-delete { margin-top: 3rem; }

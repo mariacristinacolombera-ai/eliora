@@ -1,24 +1,23 @@
 import { useRef, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Project } from "../domain/Project";
 import { createProjectId } from "../lib/createProjectId";
 import "./ProjectsShell.css";
+import ProjectWorkspace, { DeleteProjectAction, type ProjectWorkspaceActions } from "./ProjectWorkspace";
 
 export type ProjectsLoadState = "idle" | "loading" | "ready" | "error";
-type Props = {
+type Props = ProjectWorkspaceActions & {
   mode: "list" | "new" | "detail" | "edit";
   projects: Project[];
   loadState: ProjectsLoadState;
   onRetry: () => void;
   onCreate: (project: Project) => Promise<void>;
-  onUpdate: (project: Project) => Promise<void>;
 };
 
 function todayLocal() {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
-
 function calendarDate(value: string): Date | undefined {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
   const [year, month, day] = value.split("-").map(Number);
@@ -87,48 +86,9 @@ function CreateProject({ onCreate }: Pick<Props, "onCreate">) {
   </>;
 }
 
-function Workspace({ project, onUpdate }: { project: Project } & Pick<Props, "onUpdate">) {
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const pending = useRef(false);
-  const value = project.workState.primaryCounter.value;
-  async function changeCounter(delta: number) {
-    if (pending.current || value + delta < 0 || !Number.isSafeInteger(value + delta)) return;
-    pending.current = true;
-    setSaving(true);
-    setError("");
-    try {
-      await onUpdate({ ...project, workState: { ...project.workState, primaryCounter: { ...project.workState.primaryCounter, value: value + delta } } });
-    } catch {
-      setError("Contatore non salvato. Il valore precedente è stato mantenuto. Riprova.");
-    } finally {
-      pending.current = false;
-      setSaving(false);
-    }
-  }
-  return <>
-    <h1>{project.title}</h1>
-    {startLabel(project.startedAt) && <p>{startLabel(project.startedAt)}</p>}
-    <section className="projects-counter" aria-labelledby="counter-title" aria-busy={saving}>
-      <h2 id="counter-title">Contatore</h2>
-      <div className="projects-counter__controls">
-        <button className="eliora-button--secondary" aria-label="Diminuisci contatore" disabled={saving || value <= 0} onClick={() => void changeCounter(-1)}>−</button>
-        <output aria-live="polite" aria-label="Valore contatore">{value}</output>
-        <button className="eliora-button--secondary" aria-label="Aumenta contatore" disabled={saving || !Number.isSafeInteger(value + 1)} onClick={() => void changeCounter(1)}>+</button>
-      </div>
-      <p className="projects-counter__status" role="status">{saving ? "Salvataggio..." : ""}</p>
-      {error && <p className="projects-error" role="alert">{error}</p>}
-    </section>
-    <Link className="projects-details" to={`/projects/${encodeURIComponent(project.id)}/edit`}>Dettagli progetto <span aria-hidden="true">›</span></Link>
-    {!project.pattern && <section className="projects-pattern">
-      <h2>Aggiungi modello</h2><p>Per averlo qui mentre lavori</p>
-      <button className="eliora-button--secondary" disabled>Prossimamente</button>
-    </section>}
-  </>;
-}
-
-export default function ProjectsShell({ mode, projects, loadState, onRetry, onCreate, onUpdate }: Props) {
+export default function ProjectsShell({ mode, projects, loadState, onRetry, onCreate, ...actions }: Props) {
   const { id } = useParams();
+  const location = useLocation();
   const project = projects.find((entry) => entry.id === id);
   return <main className="projects-shell surface-paper">
     <div className="projects-shell__content">
@@ -138,13 +98,14 @@ export default function ProjectsShell({ mode, projects, loadState, onRetry, onCr
         : mode === "new" ? <CreateProject onCreate={onCreate} />
         : mode === "list" ? <>
           <h1>Progetti</h1>
+          {typeof location.state?.projectWarning === "string" && <p role="status">{location.state.projectWarning}</p>}
           <Link className="eliora-button--primary projects-create-link" to="/projects/new">Nuovo progetto</Link>
           {projects.length === 0 ? <p>Nessun progetto. Inizia da qui il tuo prossimo lavoro.</p> : <ul className="projects-list">{projects.map((entry) => <li key={entry.id}>
             <Link to={`/projects/${encodeURIComponent(entry.id)}`}><strong>{entry.title}</strong>{startLabel(entry.startedAt) && <span>{startLabel(entry.startedAt)}</span>}</Link>
           </li>)}</ul>}
         </> : !project ? <><h1>Progetto non trovato</h1><Link to="/projects">Torna ai progetti</Link></>
-        : mode === "detail" ? <Workspace key={project.id} project={project} onUpdate={onUpdate} />
-        : <><h1>Dettagli progetto</h1><h2>{project.title}</h2><p>Potrai completare qui i dettagli del tuo progetto prossimamente.</p><Link to={`/projects/${encodeURIComponent(project.id)}`}>Torna al lavoro</Link></>}
+        : mode === "detail" ? <ProjectWorkspace key={project.id} project={project} startLabel={startLabel(project.startedAt)} onRetry={onRetry} {...actions} />
+        : <><h1>Dettagli progetto</h1><h2>{project.title}</h2><p>Potrai completare qui i dettagli del tuo progetto prossimamente.</p><Link to={`/projects/${encodeURIComponent(project.id)}`}>Torna al lavoro</Link><DeleteProjectAction project={project} onDeleteProject={actions.onDeleteProject} /></>}
     </div>
   </main>;
 }

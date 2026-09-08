@@ -127,8 +127,18 @@ export function normalizeProject(input: unknown): NormalizeProjectResult {
       if (patternUrl) pattern = { type: "web", url: patternUrl };
     } else if (rawPattern.type === "pdf") {
       const fileId = string(rawPattern.fileId, "pattern.fileId");
-      const patternUrl = url(rawPattern.url, "pattern.url");
-      if (fileId || patternUrl) pattern = { type: "pdf", ...(fileId ? { fileId } : {}), ...(patternUrl ? { url: patternUrl } : {}) };
+      // Preserve an existing object key verbatim, even if unusable for this user.
+      // Only the Storage repository may validate/resolve it; normalization never deletes files.
+      const storagePath = typeof rawPattern.storagePath === "string" && rawPattern.storagePath.trim()
+        ? rawPattern.storagePath : undefined;
+      if (rawPattern.storagePath !== undefined && !storagePath) issue("pattern.storagePath", "invalid_storage_path", "Unusable Storage reference.");
+      if (storagePath && (!/^[^/\\]+\/[^/\\]+\/[^/\\]+\.pdf$/.test(storagePath) || storagePath !== storagePath.trim())) {
+        issue("pattern.storagePath", "invalid_storage_path", "Storage reference preserved for recovery; cannot be used without validation.");
+      }
+      const patternUrl = storagePath ? undefined : url(rawPattern.url, "pattern.url");
+      if (storagePath && rawPattern.url !== undefined) issue("pattern.url", "omitted_internal_url", "Internal PDFs use Storage references, never persisted access URLs.");
+      if (!fileId || !storagePath) issue("pattern", "legacy_pdf_reference", "Incomplete internal PDF reference preserved; no upload invented.");
+      if (fileId || storagePath || patternUrl) pattern = { type: "pdf", ...(fileId ? { fileId } : {}), ...(storagePath ? { storagePath } : {}), ...(patternUrl ? { url: patternUrl } : {}) };
     } else if (rawPattern.type === "image") {
       const fileIds: string[] = [];
       if (Array.isArray(rawPattern.fileIds)) {
@@ -150,7 +160,8 @@ export function normalizeProject(input: unknown): NormalizeProjectResult {
       const viewer = object(rawPattern.viewerState, "pattern.viewerState");
       if (viewer) {
         const page = number(viewer.page, "pattern.viewerState.page", 1, true);
-        const scrollPosition = number(viewer.scrollPosition, "pattern.viewerState.scrollPosition", 0);
+        const scrollPosition = pattern.type === "pdf" ? undefined : number(viewer.scrollPosition, "pattern.viewerState.scrollPosition", 0);
+        if (pattern.type === "pdf" && viewer.scrollPosition !== undefined) issue("pattern.viewerState.scrollPosition", "omitted_pdf_scroll", "PDFs restore page only.");
         if (page !== undefined || scrollPosition !== undefined) pattern.viewerState = {
           ...(page !== undefined ? { page } : {}), ...(scrollPosition !== undefined ? { scrollPosition } : {}),
         };

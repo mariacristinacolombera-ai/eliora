@@ -2,6 +2,29 @@ import type { Project } from "../domain/Project";
 import { normalizeProject } from "../domain/normalizeProject";
 import { supabase } from "./supabase";
 
+export type ProjectReadResult =
+  | { status: "found"; project: Project }
+  | { status: "not_found" }
+  | { status: "invalid" }
+  | { status: "read_error" };
+
+export async function loadProject(projectId: string): Promise<ProjectReadResult> {
+  try {
+    const userId = await requireUserId();
+    const { data, error } = await supabase.from("projects").select("id, data")
+      .eq("id", projectId).eq("user_id", userId).maybeSingle();
+    if (error) return { status: "read_error" };
+    if (!data) return { status: "not_found" };
+    const result = normalizeProject(data.data);
+    // A lossy pattern normalization cannot prove that a stored file is unreferenced.
+    if (!result.ok || data.id !== result.project.id || data.data.id !== result.project.id ||
+      result.issues.some((issue) => issue.path === "pattern" || issue.path.startsWith("pattern."))) {
+      return { status: "invalid" };
+    }
+    return { status: "found", project: result.project };
+  } catch { return { status: "read_error" }; }
+}
+
 async function requireUserId(): Promise<string> {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error) throw error;

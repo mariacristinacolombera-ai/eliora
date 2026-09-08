@@ -6,7 +6,7 @@ import {
   saveRecipeToSupabase,
 } from "./lib/recipesRepository";
 import Login from "./pages/Login";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import Home from "./pages/Home";
@@ -14,8 +14,9 @@ import Recipes from "./pages/Recipes";
 import NewRecipe from "./pages/NewRecipe";
 import RecipeDetail from "./pages/RecipeDetail";
 import ProjectsShell, { type ProjectsLoadState } from "./pages/ProjectsShell";
-import type { Project } from "./domain/Project";
-import { createProject, loadProjects, updateProject } from "./lib/projectsRepository";
+import type { Project, ProjectPdfPattern } from "./domain/Project";
+import { createProject, loadProjects } from "./lib/projectsRepository";
+import { attachProjectPdf, changeProjectCounter as saveProjectCounter, changeProjectPdfPage, createProjectWriteQueue, deleteProjectWithPattern, removeProjectPdf } from "./lib/projectPatternActions";
 
 import type { Recipe } from "./domain/Recipe";
 import {
@@ -31,22 +32,45 @@ export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoadState, setProjectsLoadState] = useState<ProjectsLoadState>("idle");
   const [projectsLoadAttempt, setProjectsLoadAttempt] = useState(0);
-  const projectWrites = useRef(new Set<string>());
+  const projectsRef = useRef<Project[]>([]);
+  const projectScope = `${projectsUserId}:${projectsLoadAttempt}`;
+  const projectScopeRef = useRef(projectScope);
+  projectScopeRef.current = projectScope;
+  function publishProjects(next: Project[]) { projectsRef.current = next; setProjects(next); }
+  const enqueueProject = useMemo(() => createProjectWriteQueue(
+    id => projectScopeRef.current === projectScope ? projectsRef.current.find(project => project.id === id) : undefined,
+    (id, saved) => {
+      if (projectScopeRef.current !== projectScope) return;
+      const next = saved ? projectsRef.current.map(project => project.id === id ? saved : project) : projectsRef.current.filter(project => project.id !== id);
+      projectsRef.current = next;
+      setProjects(next);
+    },
+  ), [projectScope]);
 
   async function addProject(project: Project) {
     const saved = await createProject(project);
-    setProjects((current) => [saved, ...current.filter((entry) => entry.id !== saved.id)]);
+    if (projectScopeRef.current !== projectScope) throw new Error("Sessione cambiata.");
+    publishProjects([saved, ...projectsRef.current.filter((entry) => entry.id !== saved.id)]);
   }
 
-  async function saveProject(project: Project) {
-    if (projectWrites.current.has(project.id)) throw new Error("Project save already pending");
-    projectWrites.current.add(project.id);
-    try {
-      const saved = await updateProject(project);
-      setProjects((current) => current.map((entry) => entry.id === saved.id ? saved : entry));
-    } finally {
-      projectWrites.current.delete(project.id);
-    }
+  async function changeProjectCounter(id: string, delta: number) {
+    await enqueueProject(id, current => saveProjectCounter(current, delta));
+  }
+  async function changeProjectPage(id: string, fileId: string, page: number) {
+    await enqueueProject(id, current => changeProjectPdfPage(current, fileId, page));
+  }
+  function attachPdf(id: string, pattern: ProjectPdfPattern, file: File) {
+    return enqueueProject(id, current => attachProjectPdf(current, pattern, file));
+  }
+  function removePdf(id: string) { return enqueueProject(id, removeProjectPdf); }
+  function removeProject(id: string) {
+    return enqueueProject(id, async current => ({ project: null, warning: await deleteProjectWithPattern(current) }));
+  }
+  async function reloadProjects() {
+    const settled = enqueueProject.close();
+    setProjectsLoadState("loading");
+    await settled;
+    if (projectScopeRef.current === projectScope) setProjectsLoadAttempt(attempt => attempt + 1);
   }
 
   useEffect(() => {
@@ -83,7 +107,7 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    setProjects([]);
+    publishProjects([]);
     if (!projectsUserId) {
       setProjectsLoadState("idle");
       return;
@@ -91,7 +115,7 @@ export default function App() {
     setProjectsLoadState("loading");
     loadProjects().then((loaded) => {
       if (cancelled) return;
-      setProjects(loaded);
+      publishProjects(loaded);
       setProjectsLoadState("ready");
     }).catch((error: unknown) => {
       if (cancelled) return;
@@ -279,7 +303,7 @@ if (!isAuthenticated) {
   return (
      <Routes>
       {([ ["/projects", "list"], ["/projects/new", "new"], ["/projects/:id", "detail"], ["/projects/:id/edit", "edit"] ] as const).map(([path, mode]) => (
-        <Route key={path} path={path} element={<ProjectsShell key={`${projectsUserId}:${mode}`} mode={mode} projects={projects} loadState={projectsLoadState} onCreate={addProject} onUpdate={saveProject} onRetry={() => setProjectsLoadAttempt((attempt) => attempt + 1)} />} />
+        <Route key={path} path={path} element={<ProjectsShell key={`${projectScope}:${mode}`} mode={mode} projects={projects} loadState={projectsLoadState} onCreate={addProject} onCounterChange={changeProjectCounter} onPageChange={changeProjectPage} onAttachPdf={attachPdf} onRemovePdf={removePdf} onDeleteProject={removeProject} onRetry={() => void reloadProjects()} />} />
       ))}
       <Route
   path="/"

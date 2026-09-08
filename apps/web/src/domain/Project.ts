@@ -2,9 +2,28 @@ export type ProjectStatus = "in_progress" | "completed";
 
 export type PatternViewerState = { page?: number; scrollPosition?: number };
 
+export type ProjectPdfPattern = {
+  type: "pdf";
+  title?: string;
+  fileId: string;
+  storagePath: string;
+  sourceUrl?: string;
+  viewerState?: { page?: number };
+};
+
+// Read compatibility only. Authoring always uses ProjectPdfPattern.
+export type LegacyProjectPdfPattern = {
+  type: "pdf"; title?: string; fileId?: string; storagePath?: string;
+  url?: string; sourceUrl?: string; viewerState?: { page?: number };
+};
+
+export function isInternalProjectPdf(pattern: ProjectPattern | undefined): pattern is ProjectPdfPattern {
+  return pattern?.type === "pdf" && !!pattern.fileId && !!pattern.storagePath;
+}
+
 export type ProjectPattern =
   | { type: "web"; title?: string; url: string; sourceUrl?: string; viewerState?: PatternViewerState }
-  | { type: "pdf"; title?: string; fileId?: string; url?: string; sourceUrl?: string; viewerState?: PatternViewerState }
+  | ProjectPdfPattern | LegacyProjectPdfPattern
   | { type: "image"; title?: string; fileIds: string[]; sourceUrl?: string; viewerState?: PatternViewerState };
 
 export type ProjectYarnQuantity = { amount: number; unit: "g" | "skeins" };
