@@ -50,3 +50,76 @@
 .projects-pattern-buttons { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
 .projects-pattern-title { overflow-wrap: anywhere; font-size: 0.9rem; }
 .projects-delete { margin-top: 3rem; }
+
+.projects-list__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.projects-list__link {
+  flex: 1;
+  min-width: 0;
+}
+
+.projects-list__menu-button {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.5rem;
+  line-height: 1;
+}
+
+.projects-list__menu-button:hover,
+.projects-list__menu-button:focus-visible {
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 999px;
+}
+
+.projects-list__menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.projects-list__menu-popover {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 20;
+
+  min-width: 12rem;
+  padding: 0.35rem;
+
+  background: #fbf4e7;
+ border: 1px solid rgba(48, 57, 54, 0.08);
+  border-radius: 0.75rem;
+  box-shadow: 0 8px 24px rgba(48, 57, 54, 0.14);
+}
+
+.projects-list__menu-popover a,
+.projects-list__menu-popover button {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.projects-list__menu-popover a:hover,
+.projects-list__menu-popover a:focus-visible,
+.projects-list__menu-popover button:hover,
+.projects-list__menu-popover button:focus-visible {
+  background: rgba(48, 57, 54, 0.06);
+}

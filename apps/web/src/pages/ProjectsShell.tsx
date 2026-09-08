@@ -66,6 +66,8 @@ function CreateProject({ onCreate }: Pick<Props, "onCreate">) {
     }
   }
 
+  
+
   return <>
     <h1>Nuovo progetto</h1>
     <p>Bastano un nome e una data per iniziare.</p>
@@ -89,6 +91,7 @@ function CreateProject({ onCreate }: Pick<Props, "onCreate">) {
 export default function ProjectsShell({ mode, projects, loadState, onRetry, onCreate, ...actions }: Props) {
   const { id } = useParams();
   const location = useLocation();
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const project = projects.find((entry) => entry.id === id);
   return <main className="projects-shell surface-paper">
     <div className="projects-shell__content">
@@ -100,9 +103,61 @@ export default function ProjectsShell({ mode, projects, loadState, onRetry, onCr
           <h1>Progetti</h1>
           {typeof location.state?.projectWarning === "string" && <p role="status">{location.state.projectWarning}</p>}
           <Link className="eliora-button--primary projects-create-link" to="/projects/new">Nuovo progetto</Link>
-          {projects.length === 0 ? <p>Nessun progetto. Inizia da qui il tuo prossimo lavoro.</p> : <ul className="projects-list">{projects.map((entry) => <li key={entry.id}>
-            <Link to={`/projects/${encodeURIComponent(entry.id)}`}><strong>{entry.title}</strong>{startLabel(entry.startedAt) && <span>{startLabel(entry.startedAt)}</span>}</Link>
-          </li>)}</ul>}
+          {projects.length === 0 ? <p>Nessun progetto. Inizia da qui il tuo prossimo lavoro.</p> : <ul className="projects-list">
+  {projects.map((entry) => (
+    <li key={entry.id} className="projects-list__item">
+      <Link
+        className="projects-list__link"
+        to={`/projects/${encodeURIComponent(entry.id)}`}
+      >
+        <strong>{entry.title}</strong>
+        {startLabel(entry.startedAt) && (
+          <span>{startLabel(entry.startedAt)}</span>
+        )}
+      </Link>
+
+     <div className="projects-list__menu">
+  <button
+    className="projects-list__menu-button"
+    type="button"
+    aria-label={`Azioni per ${entry.title}`}
+    aria-expanded={openMenuId === entry.id}
+    onClick={() =>
+      setOpenMenuId((current) =>
+        current === entry.id ? null : entry.id
+      )
+    }
+  >
+    •••
+  </button>
+
+  {openMenuId === entry.id && (
+    <div className="projects-list__menu-popover">
+      <Link
+        to={`/projects/${encodeURIComponent(entry.id)}/edit`}
+        onClick={() => setOpenMenuId(null)}
+      >
+        Modifica progetto
+      </Link>
+
+      <button
+  type="button"
+  onClick={() => {
+    setOpenMenuId(null);
+
+    if (window.confirm(`Eliminare il progetto "${entry.title}"?`)) {
+      actions.onDeleteProject(entry.id);
+    }
+  }}
+>
+  Elimina progetto
+</button>
+    </div>
+  )}
+</div>
+    </li>
+  ))}
+</ul> }
         </> : !project ? <><h1>Progetto non trovato</h1><Link to="/projects">Torna ai progetti</Link></>
         : mode === "detail" ? <ProjectWorkspace key={project.id} project={project} startLabel={startLabel(project.startedAt)} onRetry={onRetry} {...actions} />
         : <><h1>Dettagli progetto</h1><h2>{project.title}</h2><p>Potrai completare qui i dettagli del tuo progetto prossimamente.</p><Link to={`/projects/${encodeURIComponent(project.id)}`}>Torna al lavoro</Link><DeleteProjectAction project={project} onDeleteProject={actions.onDeleteProject} /></>}
