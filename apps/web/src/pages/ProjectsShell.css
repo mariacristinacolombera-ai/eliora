@@ -15,3 +15,26 @@
   width: min(100%, var(--content-width));
   margin-inline: auto;
 }
+
+.projects-shell h1 { margin-top: 2rem; overflow-wrap: anywhere; }
+.projects-shell h2 { font-size: 1.25rem; }
+.projects-shell button:disabled { opacity: 0.55; cursor: not-allowed; }
+.projects-shell :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+.projects-create-link { display: inline-flex; align-items: center; text-decoration: none; }
+.projects-form { display: grid; gap: 1.5rem; max-width: 30rem; margin-top: 2rem; }
+.projects-form label { display: block; margin-bottom: 0.5rem; }
+.projects-form input { width: 100%; min-width: 0; min-height: 3rem; padding: 0.75rem; border: 1px solid var(--color-primary-border); border-radius: var(--radius-button); background: transparent; color: var(--color-ink); font: inherit; box-sizing: border-box; }
+.projects-error { color: var(--color-danger); }
+.projects-list { list-style: none; padding: 0; margin-top: 2rem; }
+.projects-list li { border-bottom: 1px solid var(--color-primary-border); }
+.projects-list a { display: grid; gap: 0.5rem; padding-block: 1rem; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+.projects-list span { font-size: 0.9rem; }
+.projects-counter { margin-block: 2.5rem 1rem; text-align: center; }
+.projects-counter h2 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em; }
+.projects-counter__controls { display: flex; justify-content: center; align-items: center; gap: clamp(1rem, 5vw, 2rem); }
+.projects-counter__controls button { min-width: 3rem; min-height: 3rem; font-size: 1.5rem; }
+.projects-counter output { min-width: 2ch; font-size: clamp(2rem, 8vw, 3.5rem); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.projects-counter__status { min-height: 1.5em; font-size: 0.9rem; }
+.projects-details { display: flex; justify-content: space-between; padding-block: 1rem; color: inherit; border-bottom: 1px solid var(--color-primary-border); text-decoration: none; }
+.projects-pattern { margin-top: 2rem; padding: 1.5rem; border: 1px dashed var(--color-primary-border); border-radius: var(--radius-button); }
+.projects-pattern h2 { margin-top: 0; }

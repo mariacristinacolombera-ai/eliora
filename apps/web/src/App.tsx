@@ -6,7 +6,7 @@ import {
   saveRecipeToSupabase,
 } from "./lib/recipesRepository";
 import Login from "./pages/Login";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import Home from "./pages/Home";
@@ -15,7 +15,7 @@ import NewRecipe from "./pages/NewRecipe";
 import RecipeDetail from "./pages/RecipeDetail";
 import ProjectsShell, { type ProjectsLoadState } from "./pages/ProjectsShell";
 import type { Project } from "./domain/Project";
-import { loadProjects } from "./lib/projectsRepository";
+import { createProject, loadProjects, updateProject } from "./lib/projectsRepository";
 
 import type { Recipe } from "./domain/Recipe";
 import {
@@ -31,6 +31,23 @@ export default function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoadState, setProjectsLoadState] = useState<ProjectsLoadState>("idle");
   const [projectsLoadAttempt, setProjectsLoadAttempt] = useState(0);
+  const projectWrites = useRef(new Set<string>());
+
+  async function addProject(project: Project) {
+    const saved = await createProject(project);
+    setProjects((current) => [saved, ...current.filter((entry) => entry.id !== saved.id)]);
+  }
+
+  async function saveProject(project: Project) {
+    if (projectWrites.current.has(project.id)) throw new Error("Project save already pending");
+    projectWrites.current.add(project.id);
+    try {
+      const saved = await updateProject(project);
+      setProjects((current) => current.map((entry) => entry.id === saved.id ? saved : entry));
+    } finally {
+      projectWrites.current.delete(project.id);
+    }
+  }
 
   useEffect(() => {
   let disposed = false;
@@ -262,7 +279,7 @@ if (!isAuthenticated) {
   return (
      <Routes>
       {([ ["/projects", "list"], ["/projects/new", "new"], ["/projects/:id", "detail"], ["/projects/:id/edit", "edit"] ] as const).map(([path, mode]) => (
-        <Route key={path} path={path} element={<ProjectsShell mode={mode} projects={projects} loadState={projectsLoadState} onRetry={() => setProjectsLoadAttempt((attempt) => attempt + 1)} />} />
+        <Route key={path} path={path} element={<ProjectsShell key={`${projectsUserId}:${mode}`} mode={mode} projects={projects} loadState={projectsLoadState} onCreate={addProject} onUpdate={saveProject} onRetry={() => setProjectsLoadAttempt((attempt) => attempt + 1)} />} />
       ))}
       <Route
   path="/"
