@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Project } from "../domain/Project";
 import { createProjectId } from "../lib/createProjectId";
 import "./ProjectsShell.css";
-import ProjectWorkspace, { DeleteProjectAction, type ProjectWorkspaceActions } from "./ProjectWorkspace";
+import ProjectWorkspace, { type ProjectWorkspaceActions } from "./ProjectWorkspace";
 
 export type ProjectsLoadState = "idle" | "loading" | "ready" | "error";
 type Props = ProjectWorkspaceActions & {
@@ -12,6 +12,8 @@ type Props = ProjectWorkspaceActions & {
   loadState: ProjectsLoadState;
   onRetry: () => void;
   onCreate: (project: Project) => Promise<void>;
+  onUpdate: (id: string, details: Pick<Project, "title" | "startedAt">,
+) => Promise<void>;
 };
 
 function todayLocal() {
@@ -88,7 +90,139 @@ function CreateProject({ onCreate }: Pick<Props, "onCreate">) {
   </>;
 }
 
-export default function ProjectsShell({ mode, projects, loadState, onRetry, onCreate, ...actions }: Props) {
+function EditProject({
+  project,
+  onUpdate,
+}: {
+  project: Project;
+  onUpdate: Props["onUpdate"];
+}) {
+  const navigate = useNavigate();
+  const [title, setTitle] = useState(project.title);
+  const [startedAt, setStartedAt] = useState(project.startedAt ?? "");
+  const [errors, setErrors] = useState<{
+    title?: string;
+    date?: string;
+    save?: string;
+  }>({});
+  const [saving, setSaving] = useState(false);
+  const pending = useRef(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (pending.current) return;
+
+    const nextErrors = {
+      title: title.trim() ? undefined : "Inserisci un titolo.",
+      date: calendarDate(startedAt)
+        ? undefined
+        : "Inserisci una data di inizio valida.",
+    };
+
+    setErrors(nextErrors);
+    if (nextErrors.title || nextErrors.date) return;
+
+    pending.current = true;
+    setSaving(true);
+
+    try {
+      await onUpdate(project.id, {
+        title: title.trim(),
+        startedAt,
+      });
+
+      navigate(`/projects/${encodeURIComponent(project.id)}`);
+    } catch {
+      setErrors({
+        save: "Impossibile salvare le modifiche. Riprova.",
+      });
+    } finally {
+      pending.current = false;
+      setSaving(false);
+    }
+  }
+
+  return (
+    <>
+      <h1>Modifica progetto</h1>
+
+      <form
+        className="projects-form"
+        noValidate
+        onSubmit={submit}
+        aria-busy={saving}
+      >
+        <div>
+          <label htmlFor="project-edit-title">Titolo *</label>
+          <input
+            id="project-edit-title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            required
+            disabled={saving}
+            aria-invalid={!!errors.title}
+            aria-describedby={
+              errors.title ? "project-edit-title-error" : undefined
+            }
+          />
+          {errors.title && (
+            <p
+              className="projects-error"
+              id="project-edit-title-error"
+              role="alert"
+            >
+              {errors.title}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="project-edit-start">Data di inizio *</label>
+          <input
+            id="project-edit-start"
+            type="date"
+            min="0001-01-01"
+            max="9999-12-31"
+            value={startedAt}
+            onChange={(event) => setStartedAt(event.target.value)}
+            required
+            disabled={saving}
+            aria-invalid={!!errors.date}
+            aria-describedby={
+              errors.date ? "project-edit-date-error" : undefined
+            }
+          />
+          {errors.date && (
+            <p
+              className="projects-error"
+              id="project-edit-date-error"
+              role="alert"
+            >
+              {errors.date}
+            </p>
+          )}
+        </div>
+
+        {errors.save && (
+          <p className="projects-error" role="alert">
+            {errors.save}
+          </p>
+        )}
+
+        <button
+          className="eliora-button--primary"
+          disabled={saving}
+          type="submit"
+        >
+          {saving ? "Salvataggio..." : "Salva modifiche"}
+        </button>
+      </form>
+    </>
+  );
+}
+
+
+export default function ProjectsShell({ mode, projects, loadState, onRetry, onCreate, onUpdate, ...actions }: Props) {
   const { id } = useParams();
   const location = useLocation();
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -160,7 +294,9 @@ export default function ProjectsShell({ mode, projects, loadState, onRetry, onCr
 </ul> }
         </> : !project ? <><h1>Progetto non trovato</h1><Link to="/projects">Torna ai progetti</Link></>
         : mode === "detail" ? <ProjectWorkspace key={project.id} project={project} startLabel={startLabel(project.startedAt)} onRetry={onRetry} {...actions} />
-        : <><h1>Dettagli progetto</h1><h2>{project.title}</h2><p>Potrai completare qui i dettagli del tuo progetto prossimamente.</p><Link to={`/projects/${encodeURIComponent(project.id)}`}>Torna al lavoro</Link><DeleteProjectAction project={project} onDeleteProject={actions.onDeleteProject} /></>}
-    </div>
+        : <EditProject
+    project={project}
+    onUpdate={onUpdate}
+  /> }</div>
   </main>;
 }

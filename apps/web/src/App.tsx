@@ -15,7 +15,7 @@ import NewRecipe from "./pages/NewRecipe";
 import RecipeDetail from "./pages/RecipeDetail";
 import ProjectsShell, { type ProjectsLoadState } from "./pages/ProjectsShell";
 import type { Project, ProjectPdfPattern } from "./domain/Project";
-import { createProject, loadProjects } from "./lib/projectsRepository";
+import { createProject, loadProjects, updateProject } from "./lib/projectsRepository";
 import { attachProjectPdf, changeProjectCounter as saveProjectCounter, changeProjectPdfPage, createProjectWriteQueue, deleteProjectWithPattern, removeProjectPdf } from "./lib/projectPatternActions";
 
 import type { Recipe } from "./domain/Recipe";
@@ -59,6 +59,17 @@ export default function App() {
   async function changeProjectPage(id: string, fileId: string, page: number) {
     await enqueueProject(id, current => changeProjectPdfPage(current, fileId, page));
   }
+  async function updateProjectDetails(
+  id: string,
+  details: Pick<Project, "title" | "startedAt">,
+) {
+  await enqueueProject(id, async current => ({
+    project: await updateProject({
+      ...current,
+      ...details,
+    }),
+  }));
+}
   function attachPdf(id: string, pattern: ProjectPdfPattern, file: File) {
     return enqueueProject(id, current => attachProjectPdf(current, pattern, file));
   }
@@ -303,7 +314,7 @@ if (!isAuthenticated) {
   return (
      <Routes>
       {([ ["/projects", "list"], ["/projects/new", "new"], ["/projects/:id", "detail"], ["/projects/:id/edit", "edit"] ] as const).map(([path, mode]) => (
-        <Route key={path} path={path} element={<ProjectsShell key={`${projectScope}:${mode}`} mode={mode} projects={projects} loadState={projectsLoadState} onCreate={addProject} onCounterChange={changeProjectCounter} onPageChange={changeProjectPage} onAttachPdf={attachPdf} onRemovePdf={removePdf} onDeleteProject={removeProject} onRetry={() => void reloadProjects()} />} />
+        <Route key={path} path={path} element={<ProjectsShell key={`${projectScope}:${mode}`} mode={mode} projects={projects} loadState={projectsLoadState} onCreate={addProject} onUpdate={updateProjectDetails} onCounterChange={changeProjectCounter} onPageChange={changeProjectPage} onAttachPdf={attachPdf} onRemovePdf={removePdf} onDeleteProject={removeProject} onRetry={() => void reloadProjects()} />} />
       ))}
       <Route
   path="/"
