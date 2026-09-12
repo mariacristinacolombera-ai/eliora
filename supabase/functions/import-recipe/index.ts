@@ -1,3 +1,15 @@
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
+}
+
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim()
+    ? value.trim()
+    : undefined;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", {
@@ -22,30 +34,13 @@ Deno.serve(async (req) => {
     );
   }
 
-  try {
-    const body = await req.json();
-    const url = typeof body?.url === "string" ? body.url.trim() : "";
-
-    if (!url) {
-      return new Response(
-        JSON.stringify({ error: "Missing url" }),
-        {
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*",
-          },
-        },
-      );
-    }
-
-    let parsedUrl: URL;
+ let body: unknown;
 
 try {
-  parsedUrl = new URL(url);
+  body = await req.json();
 } catch {
   return new Response(
-    JSON.stringify({ error: "Invalid url" }),
+    JSON.stringify({ error: "Invalid JSON body" }),
     {
       status: 400,
       headers: {
@@ -56,46 +51,38 @@ try {
   );
 }
 
-if (
-  parsedUrl.protocol !== "http:" &&
-  parsedUrl.protocol !== "https:"
-) {
+const bodyRecord = asRecord(body);
+const url = asString(bodyRecord?.url);
+
+if (!url) {
   return new Response(
-    JSON.stringify({ error: "Unsupported url protocol" }),
+    JSON.stringify({ error: "Missing url" }),
     {
       status: 400,
       headers: {
-        "Content-Type": "application/json; charset=utf-8",
+        "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
       },
     },
   );
 }
 
-const hostname = parsedUrl.hostname.toLowerCase();
+try {
+  const validatedUrl = validateImportUrl(url);
 
-const blockedHostnames = new Set([
-  "localhost",
-  "0.0.0.0",
-  "127.0.0.1",
-  "::1",
-]);
-
-if (
-  blockedHostnames.has(hostname) ||
-  isPrivateIpv4(hostname)
-) {
-  return new Response(
-    JSON.stringify({ error: "Local urls are not allowed" }),
-    {
-      status: 400,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Access-Control-Allow-Origin": "*",
+  if (!validatedUrl.ok) {
+    return new Response(
+      JSON.stringify({ error: validatedUrl.error }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+        },
       },
-    },
-  );
-}
+    );
+  }
+
 
 function isPrivateIpv4(host: string): boolean {
   const parts = host.split(".").map(Number);
@@ -118,7 +105,63 @@ function isPrivateIpv4(host: string): boolean {
   );
 }
 
-    const response = await fetch(url);
+   let currentUrl = url;
+let response: Response;
+
+for (let redirectCount = 0; redirectCount <= 3; redirectCount++) {
+  const validatedCurrentUrl = validateImportUrl(currentUrl);
+
+  if (!validatedCurrentUrl.ok) {
+    return new Response(
+      JSON.stringify({ error: validatedCurrentUrl.error }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+    );
+  }
+
+  response = await fetch(currentUrl, {
+    redirect: "manual",
+  });
+
+  if (!isRedirectStatus(response.status)) {
+    break;
+  }
+
+  const location = response.headers.get("location");
+
+  if (!location) {
+    return new Response(
+      JSON.stringify({ error: "Redirect without location" }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+    );
+  }
+
+  currentUrl = new URL(location, currentUrl).toString();
+
+  if (redirectCount === 3) {
+    return new Response(
+      JSON.stringify({ error: "Too many redirects" }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+    );
+  }
+}
 
 const html = await response.text();
 
@@ -138,6 +181,69 @@ const jsonLdDocuments = jsonLdMatches
     }
   })
   .filter((value) => value !== undefined);
+
+function validateImportUrl(rawUrl: string): {
+  ok: true;
+  url: URL;
+} | {
+  ok: false;
+  error: string;
+} {
+  let parsedUrl: URL;
+
+  try {
+    parsedUrl = new URL(rawUrl);
+  } catch {
+    return {
+      ok: false,
+      error: "Invalid url",
+    };
+  }
+
+  if (
+    parsedUrl.protocol !== "http:" &&
+    parsedUrl.protocol !== "https:"
+  ) {
+    return {
+      ok: false,
+      error: "Unsupported url protocol",
+    };
+  }
+
+  const hostname = parsedUrl.hostname.toLowerCase();
+
+  const blockedHostnames = new Set([
+    "localhost",
+    "0.0.0.0",
+    "127.0.0.1",
+    "::1",
+  ]);
+
+  if (
+    blockedHostnames.has(hostname) ||
+    isPrivateIpv4(hostname)
+  ) {
+    return {
+      ok: false,
+      error: "Local urls are not allowed",
+    };
+  }
+
+  return {
+    ok: true,
+    url: parsedUrl,
+  };
+}
+
+function isRedirectStatus(status: number): boolean {
+  return (
+    status === 301 ||
+    status === 302 ||
+    status === 303 ||
+    status === 307 ||
+    status === 308
+  );
+}
 
 function findRecipeNode(value: unknown): unknown | undefined {
   if (!value || typeof value !== "object") {
@@ -176,17 +282,7 @@ const recipeNode = jsonLdDocuments
   .map((document) => findRecipeNode(document))
   .find((node) => node !== undefined);
 
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : undefined;
-}
 
-function asString(value: unknown): string | undefined {
-  return typeof value === "string" && value.trim()
-    ? value.trim()
-    : undefined;
-}
 
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -349,16 +445,24 @@ return new Response(
     },
   },
 );
-  } catch {
-    return new Response(
-      JSON.stringify({ error: "Invalid JSON body" }),
-      {
-        status: 400,
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          "Access-Control-Allow-Origin": "*",
-        },
+  } catch (error) {
+  console.error("import-recipe failed", error);
+
+  return new Response(
+    JSON.stringify({
+      error: "Import failed",
+      detail:
+        error instanceof Error
+          ? error.message
+          : String(error),
+    }),
+    {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
       },
-    );
-  }
+    },
+  );
+}
 });
