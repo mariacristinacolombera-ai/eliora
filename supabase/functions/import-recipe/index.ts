@@ -124,9 +124,10 @@ for (let redirectCount = 0; redirectCount <= 3; redirectCount++) {
     );
   }
 
-  response = await fetch(currentUrl, {
-    redirect: "manual",
-  });
+ response = await fetch(currentUrl, {
+  redirect: "manual",
+  signal: AbortSignal.timeout(10_000),
+});
 
   if (!isRedirectStatus(response.status)) {
     break;
@@ -447,6 +448,21 @@ return new Response(
 );
   } catch (error) {
   console.error("import-recipe failed", error);
+  if (
+  error instanceof DOMException &&
+  error.name === "TimeoutError"
+) {
+  return new Response(
+    JSON.stringify({ error: "Request timed out" }),
+    {
+      status: 504,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+      },
+    },
+  );
+}
 
   return new Response(
     JSON.stringify({
