@@ -164,6 +164,21 @@ for (let redirectCount = 0; redirectCount <= 3; redirectCount++) {
   }
 }
 
+const contentType = response.headers.get("content-type") ?? "";
+
+if (!contentType.toLowerCase().includes("text/html")) {
+  return new Response(
+    JSON.stringify({ error: "Unsupported content type" }),
+    {
+      status: 415,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+      },
+    },
+  );
+}
+
 const html = await response.text();
 
 const jsonLdMatches = [
