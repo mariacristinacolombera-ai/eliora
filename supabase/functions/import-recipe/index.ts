@@ -179,7 +179,42 @@ if (!contentType.toLowerCase().includes("text/html")) {
   );
 }
 
+const MAX_RESPONSE_BYTES = 2_000_000;
+
+const contentLength = Number(
+  response.headers.get("content-length"),
+);
+
+if (
+  Number.isFinite(contentLength) &&
+  contentLength > MAX_RESPONSE_BYTES
+) {
+  return new Response(
+    JSON.stringify({ error: "Response too large" }),
+    {
+      status: 413,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+      },
+    },
+  );
+}
+
 const html = await response.text();
+
+if (new TextEncoder().encode(html).length > MAX_RESPONSE_BYTES) {
+  return new Response(
+    JSON.stringify({ error: "Response too large" }),
+    {
+      status: 413,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+      },
+    },
+  );
+}
 
 const jsonLdMatches = [
   ...html.matchAll(
