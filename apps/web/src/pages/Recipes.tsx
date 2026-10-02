@@ -322,35 +322,51 @@ const cleanNavigationTimer = setTimeout(() => {
       </button>
 
       <button
+  type="button"
+  className="recipes-page__import-toggle"
+  onClick={() => {
+    setShowImportForm((current) => !current);
+    setImportError(undefined);
+  }}
+  aria-expanded={showImportForm}
+>
+  {showImportForm ? "Chiudi importazione" : "Importa da un link"}
+</button>
+
+    {showImportForm && (
+  <div className="recipes-page__import-panel">
+    <p className="recipes-page__import-title">
+      Hai trovato una ricetta che vuoi conservare?
+    </p>
+
+    <p className="recipes-page__import-text">
+      Incolla il link: Eliora proverà a prepararla per te.
+    </p>
+
+    <div className="recipes-page__import-controls">
+      <input
+        className="recipes-page__import-input"
+        type="url"
+        value={importUrl}
+        onChange={(event) => setImportUrl(event.target.value)}
+        placeholder="https://..."
+        disabled={isImporting}
+      />
+
+      <button
         type="button"
-        onClick={() => {
-        setShowImportForm((current) => !current);
-        setImportError(undefined);
-        }}
-        >
-        Importa ricetta
+        className="eliora-button--primary recipes-page__import-button"
+        onClick={handleImportRecipe}
+        disabled={isImporting || !importUrl.trim()}
+      >
+        {isImporting ? "Importazione..." : "Importa"}
       </button>
-
-      {showImportForm && (
-  <div>
-    <input
-      type="url"
-      value={importUrl}
-      onChange={(event) => setImportUrl(event.target.value)}
-      placeholder="Incolla il link della ricetta"
-      disabled={isImporting}
-    />
-
-    <button
-      type="button"
-      onClick={handleImportRecipe}
-      disabled={isImporting || !importUrl.trim()}
-    >
-      {isImporting ? "Importazione..." : "Importa"}
-    </button>
+    </div>
 
     {importError && (
-      <p>{importError}</p>
+      <p className="recipes-page__import-error">
+        {importError}
+      </p>
     )}
   </div>
 )}
