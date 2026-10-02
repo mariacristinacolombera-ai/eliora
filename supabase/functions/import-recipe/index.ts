@@ -164,6 +164,22 @@ for (let redirectCount = 0; redirectCount <= 3; redirectCount++) {
   }
 }
 
+if (!response.ok) {
+  return new Response(
+    JSON.stringify({
+      error: "Source request failed",
+      status: response.status,
+    }),
+    {
+      status: 502,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": "*",
+      },
+    },
+  );
+}
+
 const contentType = response.headers.get("content-type") ?? "";
 
 if (!contentType.toLowerCase().includes("text/html")) {
