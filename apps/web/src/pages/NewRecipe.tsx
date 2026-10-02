@@ -1,4 +1,5 @@
 import {
+  useLocation,
   useNavigate,
   useParams,
 } from "react-router-dom";
@@ -25,6 +26,10 @@ import {
   removeRecipePhotos,
   uploadRecipePhoto,
 } from "../lib/recipePhotosRepository";
+
+import { recipeImportDraftToFormValues } from "../lib/recipeImport";
+
+import type { RecipeImportDraft } from "../domain/RecipeImport";
 
 const recipeCategories = [
   { id: "primo", label: "Primo", icon: "🍝" },
@@ -63,6 +68,17 @@ export default function NewRecipe({
 }: NewRecipeProps) {
 
 const navigate = useNavigate();
+const location = useLocation();
+const importDraft = (
+  location.state as {
+    importDraft?: RecipeImportDraft;
+  } | null
+)?.importDraft;
+
+const importedValues = importDraft
+  ? recipeImportDraftToFormValues(importDraft)
+  : undefined;
+
 const { recipeId: routeRecipeId } = useParams();
 
 const baseRecipe = routeRecipeId
@@ -77,12 +93,12 @@ const isCreatingVariant = Boolean(
   baseRecipe && !isEditing,
 );
 
-  const [title, setTitle] = useState(
+const [title, setTitle] = useState(
   isEditing && baseRecipe
     ? baseRecipe.title
     : isCreatingVariant && baseRecipe
       ? `${baseRecipe.title} - variante`
-      : "",
+      : importedValues?.title ?? "",
 );
 
   const [category, setCategory] = useState(
@@ -127,7 +143,7 @@ const suggestedTags = existingTags
           .toString(36)
           .slice(2)}`,
       }))
-    : [
+    : importedValues?.ingredients ?? [
         {
           id: `${Date.now()}-ingredient`,
           quantity: "",
@@ -145,7 +161,7 @@ const [steps, setSteps] = useState<RecipeStep[]>(
           .toString(36)
           .slice(2)}`,
       }))
-    : [
+    : importedValues?.steps ?? [
         {
           id: `${Date.now()}-step`,
           text: "",
@@ -154,20 +170,30 @@ const [steps, setSteps] = useState<RecipeStep[]>(
 );
 
 const [servings, setServings] = useState(
-  baseRecipe?.servings ?? "",
+  baseRecipe?.servings ?? importedValues?.servings ?? "",
 );
+
 const [yieldQuantity, setYieldQuantity] = useState(
-  baseRecipe?.yield?.quantity ?? "",
+  baseRecipe?.yield?.quantity ??
+    importedValues?.yieldQuantity ??
+    "",
 );
+
 const [yieldUnit, setYieldUnit] = useState(
-  baseRecipe?.yield?.unit ?? "",
+  baseRecipe?.yield?.unit ??
+    importedValues?.yieldUnit ??
+    "",
 );
 const [prepMinutes, setPrepMinutes] = useState(
-  baseRecipe?.timing?.prepMinutes?.toString() ?? "",
+  baseRecipe?.timing?.prepMinutes?.toString() ??
+    importedValues?.prepMinutes ??
+    "",
 );
 
 const [cookMinutes, setCookMinutes] = useState(
-  baseRecipe?.timing?.cookMinutes?.toString() ?? "",
+  baseRecipe?.timing?.cookMinutes?.toString() ??
+    importedValues?.cookMinutes ??
+    "",
 );
 
 const [restValue, setRestValue] = useState(
@@ -201,7 +227,9 @@ const [sourceName, setSourceName] = useState(
   baseRecipe?.source?.name ?? "",
 );
 const [sourceUrl, setSourceUrl] = useState(
-  baseRecipe?.source?.url ?? "",
+  baseRecipe?.source?.url ??
+    importedValues?.sourceUrl ??
+    "",
 );
 
   const [isLeaving, setIsLeaving] = useState(false);

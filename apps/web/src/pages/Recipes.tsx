@@ -10,6 +10,7 @@ import RecipeCard from "../features/recipes/components/RecipeCard";
 import type { Recipe } from "../domain/Recipe";
 import { getLatestPreparation } from "../lib/recipePreparations";
 import { createRecipePhotoSignedUrls } from "../lib/recipePhotosRepository";
+import { importRecipeFromUrl } from "../lib/recipeImportRepository";
 
 type RecipesProps = {
   recipes: Recipe[];
@@ -36,12 +37,44 @@ const [showAddedMessage, setShowAddedMessage] =
   useState(false);
 
 const [searchQuery, setSearchQuery] = useState("");
+const [showImportForm, setShowImportForm] = useState(false);
+const [importUrl, setImportUrl] = useState("");
+const [isImporting, setIsImporting] = useState(false);
+const [importError, setImportError] = useState<string>();
 const [coverUrlsByRecipeId, setCoverUrlsByRecipeId] = useState<
   Record<string, string>
 >({});
 const [heroPreparationImageUrl, setHeroPreparationImageUrl] = useState<
   string
 >();
+
+async function handleImportRecipe() {
+  const url = importUrl.trim();
+
+  if (!url) {
+    setImportError("Incolla il link della ricetta.");
+    return;
+  }
+
+  setIsImporting(true);
+  setImportError(undefined);
+
+  try {
+    const importDraft = await importRecipeFromUrl(url);
+
+    navigate("/recipes/new", {
+      state: { importDraft },
+    });
+  } catch (error) {
+    console.error("Failed to import recipe", error);
+
+    setImportError(
+      "Non sono riuscita a leggere questa ricetta. Controlla il link e riprova.",
+    );
+  } finally {
+    setIsImporting(false);
+  }
+}
 
 const normalizedSearch = searchQuery
   .trim()
@@ -287,6 +320,40 @@ const cleanNavigationTimer = setTimeout(() => {
        >
        + Nuova ricetta
       </button>
+
+      <button
+        type="button"
+        onClick={() => {
+        setShowImportForm((current) => !current);
+        setImportError(undefined);
+        }}
+        >
+        Importa ricetta
+      </button>
+
+      {showImportForm && (
+  <div>
+    <input
+      type="url"
+      value={importUrl}
+      onChange={(event) => setImportUrl(event.target.value)}
+      placeholder="Incolla il link della ricetta"
+      disabled={isImporting}
+    />
+
+    <button
+      type="button"
+      onClick={handleImportRecipe}
+      disabled={isImporting || !importUrl.trim()}
+    >
+      {isImporting ? "Importazione..." : "Importa"}
+    </button>
+
+    {importError && (
+      <p>{importError}</p>
+    )}
+  </div>
+)}
 
 
         {recipes.length === 0 ? (
